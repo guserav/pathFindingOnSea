@@ -9,7 +9,7 @@
   <body>
     <div id="map" class="map"></div>
     <script type="text/javascript">
-      var styles = {
+      var styles = { // TODO
         'LineString': new ol.style.Style({
           stroke: new ol.style.Stroke({
             color: 'green',
@@ -33,128 +33,28 @@
         if(ret) return ret;
         return styles['default']
       };
-      var geojsonObject = {
-        'type': 'FeatureCollection',
-        'crs': {
-          'type': 'name',
-          'properties': {
-            //'name': 'EPSG:3857',
-            'name': 'EPSG:4326 ',
-          },
-        },
-        'features': [
-          {
-            'type': 'Feature',
-            'geometry': {
-              'type': 'Point',
-              'coordinates': [0, 0],
-            },
-          },
-          {
-            'type': 'Feature',
-            'geometry': {
-              'type': 'Point',
-              'coordinates': [3,53],
-            },
-          },
-          {
-            'type': 'Feature',
-            'geometry': {
-              'type': 'LineString',
-              'coordinates': [
-                [40, -20],
-                [80, 20] ],
-            },
-          },
-          {
-            'type': 'Feature',
-            'geometry': {
-              'type': 'LineString',
-              'coordinates': [
-                [40, 20],
-                [80, -20] ],
-            },
-          },
-          {
-            'type': 'Feature',
-            'geometry': {
-              'type': 'Polygon',
-              'coordinates': [
-                [
-                  [-50, -10],
-                  [-40, 10],
-                  [-30, -10] ] ],
-            },
-          },
-          {
-            'type': 'Feature',
-            'geometry': {
-              'type': 'MultiLineString',
-              'coordinates': [
-                [
-                  [-10, -75],
-                  [-10, 75] ],
-                [
-                  [10, -75],
-                  [10, 75] ],
-                [
-                  [-75, -10],
-                  [75, -10] ],
-                [
-                  [-75, 10],
-                  [75, 10] ] ],
-            },
-          },
-          {
-            'type': 'Feature',
-            'geometry': {
-              'type': 'MultiPolygon',
-              'coordinates': [
-                [
-                  [
-                    [-50, 60],
-                    [-50, 80],
-                    [-30, 80],
-                    [-30, 60] ] ],
-                [
-                  [
-                    [-20, 60],
-                    [-20, 80],
-                    [0, 80],
-                    [0, 60] ] ],
-                [
-                  [
-                    [10, 60],
-                    [10, 80],
-                    [30, 80],
-                    [30, 60] ] ] ],
-            },
-          },
-          {
-            'type': 'Feature',
-            'geometry': {
-              'type': 'GeometryCollection',
-              'geometries': [
-                {
-                  'type': 'Point',
-                  'coordinates': [20, 0],
-                },
-                {
-                  'type': 'Polygon',
-                  'coordinates': [
-                    [
-                      [-4, 21],
-                      [58, 13],
-                      [15, -23] ] ],
-                } ],
-            },
-          } ],
-      };
-      var vectorSource = new ol.source.Vector({
-        features: new ol.format.GeoJSON().readFeatures(geojsonObject, {dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857'}),
+
+      var backgroundSource = new ol.source.Vector({
+        url: '/static/backgroundMap.json',
+        format: new ol.format.GeoJSON({dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857'}),
       });
-      var vectorLayer = new ol.layer.Vector({
-        source: vectorSource,
+
+      var p1 = new ol.Feature({geometry: new ol.geom.Point([-3e6,3e6])});
+      var p2 = new ol.Feature({geometry: new ol.geom.Point([-1e6,-1e6])});
+      var pointCollection = new ol.Collection([p1, p2]);
+
+      var startEndSource = new ol.source.Vector({
+        features: pointCollection,
+        //format: new ol.format.JSONFeature({dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857'}),
+      });
+
+      var backgroundLayer = new ol.layer.Vector({
+        source: backgroundSource,
+        style: styleFunction,
+      });
+
+      var startEndLayer = new ol.layer.Vector({
+        source: startEndSource,
         style: styleFunction,
       });
 
@@ -164,17 +64,39 @@
           new ol.layer.Tile({
             source: new ol.source.OSM()
           }),
-          vectorLayer
+          backgroundLayer,
+          startEndLayer
         ],
         view: new ol.View({
           center: [0, 0],
           zoom: 4
         })
       });
-      map.on('click', function(e){
+
+      var setPoint1 = true;
+      map.on('singleclick', function(e){
         console.log(ol.proj.transform(e.coordinate, e.map.getView().getProjection(), 'EPSG:4326'));
+        if (setPoint1) {
+          p1.setGeometry(new ol.geom.Point(e.coordinate));
+        } else {
+          p2.setGeometry(new ol.geom.Point(e.coordinate));
+        }
+        setPoint1 = !setPoint1;
       });
+
+      function reloadBackground() {
+        var vectorSource = new ol.source.Vector({
+          url: '/static/backgroundMap.json',
+          format: new ol.format.GeoJSON({dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857'}),
+        });
+        var vectorLayer = new ol.layer.Vector({
+          source: vectorSource,
+          style: styleFunction,
+        });
+        map.getLayers().setAt(1, vectorLayer);
+      }
     </script>
     <button onClick='javascript:map.updateSize()'>Click me after resizing</button>
+    <button onClick='javascript:reloadBackground()'>ReloadBackground</button>
   </body>
 </html>
