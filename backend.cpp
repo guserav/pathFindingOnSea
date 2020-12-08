@@ -52,37 +52,8 @@ void outputPath(ClipperLib::Path& path) {
         std::cout << ",";
         outputPoint(path[i]);
     }
-    std::cout << "    \n]\n";
-    std::cout << "  }\n";
-    std::cout << "}\n";
-}
-
-void outputPath(std::list<ClipperLib::Path> path) {
-    std::cout << "{\n";
-    std::cout << "  \"type\": \"Feature\",\n";
-    std::cout << "  \"geometry\": {";
-    std::cout << "    \"type\": \"LineString\",\n";
-    std::cout << "    \"coordinates\": [";
-    ClipperLib::IntPoint end = path.front().front();
-    outputPoint(end);
-    for(auto& other : path) {
-        if(other.front() == end) {
-            for(int i=1; i < other.size(); i++) {
-                std::cout << ",";
-                outputPoint(other[i]);
-            }
-            end = other.back();
-        } else if (other.back() == end){
-            for(int i= other.size() - 2; i >= 0; i--) {
-                std::cout << ",";
-                outputPoint(other[i]);
-            }
-            end = other.front();
-        } else {
-            std::cerr << "Paths were supposed to match" << std::endl;
-            throw std::runtime_error("Paths were supposed to match");
-        }
-    }
+    std::cout << ",";
+    outputPoint(path[0]);
     std::cout << "    \n]\n";
     std::cout << "  }\n";
     std::cout << "}\n";
@@ -107,25 +78,26 @@ void concatenatePaths(std::list<ClipperLib::Path>& source, std::list<ClipperLib:
     std::cerr << "Starting with " << source.size() << " paths\n";
     //source.sort(compareBasedOnX);
     while(source.size()) {
-        std::list<ClipperLib::Path> toAdd;
-        toAdd.splice(toAdd.end(), source, source.begin());
-        ClipperLib::Path& current = toAdd.back();
-        ClipperLib::IntPoint end = current.back();
-        size_t amountToAdd = 0;
+        dest.splice(dest.end(), source, source.begin());
+        ClipperLib::Path& current = dest.back();
+        ClipperLib::IntPoint end = current[current.size() - 1];
         while(current[0] != end) {
             bool found = false;
             for(auto it = source.begin(); it != source.end(); it++) {
-                const ClipperLib::Path& other = *it;
-                if(other.front() == end) {
-                    end = other.back();
+                ClipperLib::Path& other = *it;
+                if(other[0] == end) {
+                    for(int i=1; i < other.size(); i++) {
+                        current.push_back(other[i]);
+                    }
                     found = true;
-                } else if (other.back() == end){
-                    end = other.front();
+                } else if (other[other.size() - 1] == end){
+                    for(int i= other.size() - 2; i >= 0; i--) {
+                        current.push_back(other[i]);
+                    }
                     found = true;
                 }
                 if(found) {
-                    amountToAdd += other.size() - 1; // deduplicating merge point
-                    toAdd.splice(toAdd.end(), source, it);
+                    source.erase(it);
                     std::cerr << "\r" << source.size();
                     break;
                 }
@@ -134,24 +106,8 @@ void concatenatePaths(std::list<ClipperLib::Path>& source, std::list<ClipperLib:
                 std::cerr << "Couldn't find another path to append" << std::endl;
                 throw std::runtime_error("Couldn't find another path to append");
             }
+            end = current[current.size() - 1];
         }
-        outputPath(toAdd);
-        /*current.reserve(current.size() + amountToAdd);
-        for(auto& other : toAdd) {
-            end = current.back();
-            if(other.front() == end) {
-                for(int i=1; i < other.size(); i++) {
-                    current.push_back(other[i]);
-                }
-            } else if (other.back() == end){
-                for(int i= other.size() - 2; i >= 0; i--) {
-                    current.push_back(other[i]);
-                }
-            } else {
-                std::cerr << "Paths were supposed to match" << std::endl;
-                throw std::runtime_error("Paths were supposed to match");
-            }
-        }*/
     }
     std::cerr << "\nNow only " << dest.size() << " paths\n";
 }
@@ -175,7 +131,7 @@ int main(int argc, char ** argv) {
     std::list<ClipperLib::Path> concatenatedPaths;
     std::cerr << "Done reading in paths." << std::endl;
     concatenatePaths(handler.paths, concatenatedPaths);
-    //outputPaths(concatenatedPaths);
+    outputPaths(concatenatedPaths);
 
     /*osmium::area::Assembler::config_type assembler_config;
     osmium::area::MultipolygonCollector<osmium::area::Assembler>  collector(assembler_config);
