@@ -4,7 +4,10 @@ ECHO=$(QUIET)echo
 PKG_CONFIG=pkg-config
 SRC = \
       src/osmium_import.cpp \
-      src/output_geojson.cpp
+      src/output.cpp \
+      src/output_geojson.cpp \
+      src/output_paths.cpp \
+      src/import_paths.cpp
 
 SRC_LIBS = \
      3rd_party/clipper/clipper.cpp
@@ -40,13 +43,16 @@ else
 	BUILD_DIR = $(BASE_BUILD_DIR)/debug
 endif
 
-all: $(BASE_BUILD_DIR)/a.out $(BASE_BUILD_DIR)/backend.so
+all: $(BASE_BUILD_DIR)/a.out $(BASE_BUILD_DIR)/backend.so $(BASE_BUILD_DIR)/__init__.py
 
 $(BASE_BUILD_DIR)/a.out: $(BUILD_DIR)/a.out
 	cp $< $@
 
 $(BASE_BUILD_DIR)/backend.so: $(BUILD_DIR)/backend.so
 	cp $< $@
+
+$(BASE_BUILD_DIR)/__init__.py:
+	touch $@
 
 $(BUILD_DIR)/a.out: $(OBJ) $(OBJ_LIBS) $(OBJ_CLI)
 	$(ECHO) $@

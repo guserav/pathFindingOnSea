@@ -1,47 +1,42 @@
+from build import backend
 import flask
-import osmium
+import os
+from werkzeug.utils import secure_filename
 app = flask.Flask(__name__)
+app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 
-class TestHandler(osmium.SimpleHandler):
-    def __init__(self):
-        self.tagKeys = []
-        self.tagValues = []
-        super().__init__()
-
-    def way(self, w):
-        try:
-            self.foundWay = True
-            for t in w.tags:
-                key = str(t.k)
-                value = str(t.v)
-            #for n in w.nodes:
-                #pass
-        except Exception as e:
-            app.logger.debug(e)
-
-    def area(self, a):
-        try:
-            self.foundArea = True
-            for t in a.tags:
-                key = str(t.k)
-                value = str(t.v)
-                if key not in self.tagKeys: self.tagKeys.append(key)
-                app.logger.debug("Tag: {}".format(key))
-            #app.logger.debug("Area: {}".format(a.num_rings()))
-        except Exception as e:
-            app.logger.debug(e)
+def createDirectory(name):
+    os.makedirs(name, exist_ok=True)
 
 @app.route('/')
 def index():
     return flask.redirect(flask.url_for('show_map'))
 
-@app.route('/calculateOutlines/<source>')
-def calculateOutlines(source):
-    t = TestHandler()
-    t.apply_file(source)
-    reader = osmium.io.Reader(source)
-    header = reader.header()
-    return str(t.tagKeys) + "\n" + str(t.tagValues)
+@app.route('/calculateOutlines')
+def calculateOutlines():
+    INPUT_DIR='input'
+    DATA_DIR='data'
+    createDirectory(INPUT_DIR)
+    files=os.listdir(INPUT_DIR)
+    source = flask.request.args.get('filename', None)
+    if source:
+        filename = os.path.join(INPUT_DIR,secure_filename(source))
+        if not os.path.exists(filename):
+            flask.flash("Couldn't find {}".format(filename))
+        else:
+            basename = os.path.basename(filename)
+            name, ext = os.path.splitext(basename)
+            outdir = os.path.join(DATA_DIR, name)
+            createDirectory(outdir)
+            geojsonOut = os.path.join(outdir, "geojson.json")
+            dataOut = os.path.join(outdir, "data.bin")
+            backend.parseOSMdata(filename, geojsonOut, dataOut)
+
+    return flask.render_template('calculateOutlines.html', files=files)
+
+@app.route('/generateGraph')
+def generateGraph():
+    return flask.render_template('generateGraph.html', data=data)
 
 @app.route('/map')
 def show_map():

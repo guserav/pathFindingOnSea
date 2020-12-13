@@ -1,0 +1,23 @@
+<!doctype html>
+<title>{% set title_s %}{% block title %}{% endblock %}{% endset %} - PathFinding</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+{% block header %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.4.3/css/ol.css" type="text/css">
+<script src="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.4.3/build/ol.js"></script>
+{% endblock %}
+<nav>
+  <h1>PathFinding</h1>
+  <ul>
+    <li><a href="{{ url_for('calculateOutlines') }}">Calculate Outlines</a>
+    <li><a href="{{ url_for('show_map') }}">Map</a>
+  </ul>
+</nav>
+<section class="content">
+  <header>
+      <h2>{{title_s}}</h2>
+  </header>
+  {% for message in get_flashed_messages() %}
+    <div class="flash">{{ message }}</div>
+  {% endfor %}
+  {% block content %}{% endblock %}
+</section>

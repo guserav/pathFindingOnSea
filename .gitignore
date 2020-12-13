@@ -171,4 +171,5 @@ cython_debug/
 *.app
 
 # Input data
-*.pbf
+input/
+data/
