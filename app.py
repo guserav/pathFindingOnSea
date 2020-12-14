@@ -18,7 +18,7 @@ def createDirectory(name):
 
 @app.route('/')
 def index():
-    return flask.redirect(flask.url_for('show_map'))
+    return flask.redirect(flask.url_for('calculateOutlines'))
 
 @app.route('/calculateOutlines')
 def calculateOutlines():
@@ -69,6 +69,7 @@ def generateGraph():
         if size <= 1000:
             geojsonFile = os.path.join(DATA_DIR, source, GRAPH_GEOJSON.format(size))
             graph.output_geojson(geojsonFile)
+        return flask.redirect(flask.url_for('show_map'))
 
     return flask.render_template('generateGraph.html', data=data)
 

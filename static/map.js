@@ -118,17 +118,14 @@ map.on('singleclick', function(e){
     setPoint1 = !setPoint1;
 });
 
-const showGraphToggle = document.querySelector('#show_graph');
 function reloadBackground() {
-    if(showGraphToggle.checked) {
-        var vectorSource = new ol.source.Vector({
-            url: '/data/json/' + data_source.selectedOptions[0].value,
-            format: new ol.format.GeoJSON({dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857'}),
-        });
-        var vectorLayer = new ol.layer.Vector({
-            source: vectorSource,
-            style: styleFunction,
-        });
-        map.getLayers().setAt(1, vectorLayer);
-    }
+    var vectorSource = new ol.source.Vector({
+        url: '/data/json/' + data_source.selectedOptions[0].value,
+        format: new ol.format.GeoJSON({dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857'}),
+    });
+    var vectorLayer = new ol.layer.Vector({
+        source: vectorSource,
+        style: styleFunction,
+    });
+    map.getLayers().setAt(1, vectorLayer);
 }
