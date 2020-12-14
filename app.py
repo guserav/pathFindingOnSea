@@ -11,6 +11,7 @@ OUTLINES_DATA='outlines.bin'
 GRAPH_GEOJSON='graph-{:n}.json'
 GRAPH_DATA='graph-{:n}.bin'
 GRAPH_DATA_RE=re.compile('graph-([0-9]+).bin')
+LAST_PATH_GEOJSON = ""
 
 def createDirectory(name):
     os.makedirs(name, exist_ok=True)
@@ -49,7 +50,8 @@ def checkDataDir(name):
         contoursFile = os.path.join(path, OUTLINES_DATA)
         if os.path.exists(contoursFile):
             contours = True
-        graphsMatches = [GRAPH_DATA_RE.fullmatch(x) for x in os.listdir()]
+        graphsMatches = [GRAPH_DATA_RE.fullmatch(x) for x in os.listdir(path)]
+        app.logger.debug(graphsMatches);
         graphs = [m.group(1) for m in graphsMatches if m]
     return contours, graphs
 
@@ -57,7 +59,7 @@ def checkDataDir(name):
 def generateGraph():
     createDirectory(DATA_DIR)
     data=[x for x in os.listdir(DATA_DIR) if checkDataDir(x)[0]]
-    app.logger.debug(data)
+
     source = flask.request.args.get('data_source', None)
     size = int(flask.request.args.get('node_count', 0))
     if source and size > 0:
@@ -75,6 +77,30 @@ def generateGraph():
 def calculateDistance(x1, y1, x2, y2):
     return flask.jsonify({'distance': backend.calculate_distance(float(x1), float(y1), float(x2), float(y2))}), 200
 
+@app.route('/findPath/<data_source>/<x1>/<y1>/<x2>/<y2>')
+def getPath(data_source, x1, y1, x2, y2):
+    global LAST_PATH_GEOJSON
+    data_source = data_source.split(";")
+    data = data_source[0]
+    node_count = int(data_source[1])
+    graph = backend.Graph(os.path.join(DATA_DIR, data, GRAPH_DATA.format(node_count)))
+    path_data = graph.find_path(float(x1), float(y1), float(x2), float(y2))
+    LAST_PATH_GEOJSON = path_data['geojson']
+    return flask.jsonify(path_data), 200
+
+@app.route('/lastPath.json')
+def lastPathGeojson():
+    global LAST_PATH_GEOJSON
+    response = app.response_class(
+        response=LAST_PATH_GEOJSON,
+        status=200,
+        mimetype='application/json'
+    )
+    return response
+
 @app.route('/map')
 def show_map():
-    return flask.render_template('map.html')
+    createDirectory(DATA_DIR)
+    data={x: checkDataDir(x) for x in os.listdir(DATA_DIR) if checkDataDir(x)[1]}
+    app.logger.debug(data)
+    return flask.render_template('map.html', data=data)

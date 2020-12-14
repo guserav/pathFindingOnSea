@@ -84,10 +84,12 @@ var map = new ol.Map({
 
 var setPoint1 = true;
 const distanceDisplay = document.querySelector('#distance');
+const lengthDisplay = document.querySelector('#length');
 const startDisplay = document.querySelector('#start');
 startDisplay.textContent = p1;
 const endDisplay = document.querySelector('#end');
 endDisplay.textContent = p2;
+const data_source = document.querySelector('#data_source');
 map.on('singleclick', function(e){
     var newCords = ol.proj.transform(e.coordinate, e.map.getView().getProjection(), 'EPSG:4326')
     console.log(newCords);
@@ -100,9 +102,20 @@ map.on('singleclick', function(e){
         endDisplay.textContent = p2;
         pMap2.setGeometry(new ol.geom.Point(e.coordinate));
     }
-    fetch('/calculateDistance/' + p1[0] + '/' + p1[1] + '/' + p2[0] + '/' + p2[1]).then(function(response) {
+    fetch('/findPath/' + data_source.selectedOptions[data_source.selectedIndex].value + '/' + p1[0] + '/' + p1[1] + '/' + p2[0] + '/' + p2[1]).then(function(response) {
         response.text().then(function(text) {
-            distanceDisplay.textContent = JSON.parse(text)['distance'];
+            data = JSON.parse(text);
+            distanceDisplay.textContent = data['distance'];
+            lengthDisplay.textContent = data['length'];
+            var vectorSource = new ol.source.Vector({
+                url: '/lastPath.json',
+                format: new ol.format.GeoJSON({dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857'}),
+            });
+            var vectorLayer = new ol.layer.Vector({
+                source: vectorSource,
+                style: styleFunction,
+            });
+            map.getLayers().setAt(1, vectorLayer);
         });
     });
     setPoint1 = !setPoint1;

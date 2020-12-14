@@ -3,9 +3,11 @@
 #include "output.hpp"
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include "graph.hpp"
 #include "import_paths.hpp"
 #include "helper.hpp"
+#include "output_geojson.hpp"
 
 #define MODULE_NAME "backend"
 #define START_FUNC try {
@@ -16,6 +18,12 @@
     } catch (...) {\
         PyErr_SetString(PyExc_Exception, "unknown exception");\
         return NULL;\
+    }
+
+#define ALLOC_CHECK(o)  \
+    if(NULL == o) { \
+        PyErr_SetString(PyExc_MemoryError, "Failed to allocate data"); \
+        return NULL; \
     }
 
 
@@ -96,9 +104,64 @@ PyObject * pyGraphOutput_geojson(PyObject *pself, PyObject *args) {
     Py_RETURN_NONE;
 }
 
+PyObject * pyGraphPath(PyObject *pself, PyObject *args) {
+    float x1, y1, x2, y2;
+    if (!PyArg_ParseTuple(args, "ffff", &x1, &y1, &x2, &y2)) {
+        return NULL;
+    }
+    START_FUNC;
+    auto self = reinterpret_cast<PyGraph *>(pself);
+    ClipperLib::IntPoint a{toInt(x1), toInt(y1)};
+    ClipperLib::IntPoint b{toInt(x2), toInt(y2)};
+    float distance = calculate_distance(a, b);
+    PathData p = self->graph->getPath(a, b);
+
+    std::stringstream out(std::ios_base::out);
+    geojson_output::outputPathsStart(out);
+    geojson_output::outputPath(out, p.path);
+    geojson_output::outputPathsEnd(out);
+
+    std::string geojson = out.str();
+
+    // From now on no exceptions should be thrown else the cleanup gets annoying;
+    PyObject* dict = PyDict_New();
+    ALLOC_CHECK(dict);
+
+    PyObject * data_geojson = PyUnicode_FromString(geojson.c_str());
+    ALLOC_CHECK(data_geojson);
+    if(PyDict_SetItemString(dict, "geojson", data_geojson) < 0) {
+        Py_DECREF(data_geojson);
+        Py_DECREF(dict);
+        return NULL;
+    }
+    Py_DECREF(data_geojson);
+
+    PyObject * length = PyLong_FromSize_t(p.length);
+    ALLOC_CHECK(length);
+    if(PyDict_SetItemString(dict, "length", length) < 0) {
+        Py_DECREF(length);
+        Py_DECREF(dict);
+        return NULL;
+    }
+
+    PyObject * pyDistance = PyFloat_FromDouble(distance);
+    ALLOC_CHECK(pyDistance);
+    if(PyDict_SetItemString(dict, "distance", pyDistance) < 0) {
+        Py_DECREF(pyDistance);
+        Py_DECREF(dict);
+        return NULL;
+    }
+    Py_DECREF(pyDistance);
+    return dict;
+
+    ENDFUNC;
+    Py_RETURN_NONE;
+}
+
 static struct PyMethodDef PyGraphMethods[] = {
     {"output", &pyGraphOutput, METH_VARARGS, ""},
     {"output_geojson", &pyGraphOutput_geojson, METH_VARARGS, ""},
+    {"find_path", &pyGraphPath, METH_VARARGS, ""},
     {NULL, NULL, 0, NULL},
 };
 
@@ -129,7 +192,7 @@ static int PyGraphInit(PyObject *pself, PyObject *args, PyObject *kwds)
             }
             new_graph = new Graph(paths, node_count);
         } else { // TODO
-            Py_NotImplemented;
+            new_graph = new Graph(filename);
         }
     } catch (const std::exception &e) {\
         PyErr_SetString(PyExc_Exception, e.what());\
