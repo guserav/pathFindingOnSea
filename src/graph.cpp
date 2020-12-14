@@ -1,4 +1,5 @@
 #include "graph.hpp"
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <fstream>
@@ -114,6 +115,22 @@ Graph::Graph(std::list<ClipperLib::Path>& polygons, size_t N) {
     nodes.back().onWater = false;
 }
 
+Graph::Graph(const char * filename) {
+    std::ifstream input(filename, std::ios_base::binary);
+    size_t nodes_count = nodes.size();
+    input.read((char *) &nodes_count, LENGTH(nodes_count, 1));
+    nodes.resize(nodes_count);
+    input.read((char *) nodes.data(), LENGTH(Node, nodes_count));
+
+    input.read((char *) &pointsInX, LENGTH(pointsInX, 1));
+    input.read((char *) &pointsInY, LENGTH(pointsInY, 1));
+
+    size_t edges_count = edges.size();
+    input.read((char *) &edges_count, LENGTH(edges_count, 1));
+    edges.resize(edges_count);
+    input.read((char *) edges.data(), LENGTH(Edge, edges_count));
+}
+
 void Graph::addEdgeIfNodeExists(size_t x, size_t y, const Node& node) {
     if(x < 0) x = pointsInX - 1;
     if(y < 0) return;
@@ -173,4 +190,86 @@ void Graph::output_geojson(std::ostream& out) {
         }
     }
     geojson_output::outputPathsEnd(out);
+}
+
+size_t Graph::getNearestNode(const ClipperLib::IntPoint& x) {
+    size_t currentBest = 0;
+    size_t currentBestDistance = SIZE_MAX;
+    for(size_t i = 0; i < nodes.size(); i++) {
+        const auto& n = nodes[i];
+        if(n.onWater) {
+            size_t dist = calculate_distance(x, n.position);
+            if(dist < currentBestDistance) {
+                currentBest = i;
+                currentBestDistance = dist;
+            }
+        }
+    }
+    return currentBest;
+}
+
+struct NodeDijkstraData {
+    size_t distanceHere;
+    size_t prev;
+};
+using NodeDijkstraData = struct NodeDijkstraData;
+
+struct HeapElemDijkstra {
+    size_t distanceHere;
+    size_t prev;
+    size_t node;
+};
+using HeapElemDijkstra = struct HeapElemDijkstra;
+
+bool compareDijkstra(const HeapElemDijkstra& a, const HeapElemDijkstra& b) {
+    return a.distanceHere > b.distanceHere;
+}
+
+PathData Graph::getPath(const ClipperLib::IntPoint& from, const ClipperLib::IntPoint& to) {
+    PathData ret{.length = 0};
+    size_t fromIndex = getNearestNode(from);
+    size_t toIndex = getNearestNode(to);
+
+    std::vector<NodeDijkstraData> dijkstraData(nodes.size(), {.distanceHere = SIZE_MAX, .prev = 0});
+    std::vector<HeapElemDijkstra> dijkstraHeap;
+    std::make_heap(dijkstraHeap.begin(), dijkstraHeap.end(), &compareDijkstra);
+    dijkstraHeap.push_back({.distanceHere = 0, .prev = fromIndex, .node = fromIndex});
+    std::push_heap(dijkstraHeap.begin(), dijkstraHeap.end(), &compareDijkstra);
+
+    while(dijkstraHeap.size()) {
+        std::pop_heap(dijkstraHeap.begin(), dijkstraHeap.end(), &compareDijkstra);
+        HeapElemDijkstra current = dijkstraHeap.back();
+        dijkstraHeap.pop_back();
+
+        NodeDijkstraData& node = dijkstraData[current.node];
+        if(current.distanceHere < node.distanceHere) {
+            node.distanceHere = current.distanceHere;
+            node.prev = current.prev;
+
+            for(size_t i = nodes[current.node].edge_offset; i < nodes[current.node + 1].edge_offset; i++) {
+                const Edge& edge = edges[i];
+                size_t dist = current.distanceHere + edge.length;
+                const NodeDijkstraData& otherNode = dijkstraData[edge.dest];
+
+                if(dist < otherNode.distanceHere) {
+                    dijkstraHeap.push_back({.distanceHere = dist, .prev = current.node, .node = edge.dest});
+                    std::push_heap(dijkstraHeap.begin(), dijkstraHeap.end(), &compareDijkstra);
+                }
+            }
+            if(current.node == toIndex){
+                ret.length = current.distanceHere;
+                break;
+            }
+        }
+    }
+
+    size_t current = toIndex;
+    ret.path.emplace_back(nodes[current].position);
+    while(current != fromIndex) {
+        const NodeDijkstraData& c = dijkstraData[current];
+        current = c.prev;
+        ret.path.emplace_back(nodes[current].position);
+    }
+    // The path is reverse but we only want to display it so it doesn't matter
+    return ret;
 }
