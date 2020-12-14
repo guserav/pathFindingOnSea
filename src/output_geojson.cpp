@@ -5,6 +5,43 @@ void geojson_output::outputPoint(std::ostream& out, const ClipperLib::IntPoint& 
     out << "\n      [" << toString(p.X) << ", " << toString(p.Y) << "]";
 }
 
+void geojson_output::outputFeaturePoint(std::ostream& out, const ClipperLib::IntPoint& p) {
+    out << "{\n";
+    out << "  \"type\": \"Feature\",\n";
+    out << "  \"geometry\": {";
+    out << "    \"type\": \"Point\",\n";
+    out << "    \"coordinates\": ";
+    geojson_output::outputPoint(out, p);
+    out << "\n  }\n}";
+}
+
+void geojson_output::outputLine(std::ostream& out, const ClipperLib::IntPoint& a, const ClipperLib::IntPoint& b) {
+    if(checkForJumpCrossing(a, b)) {
+        ClipperLib::cInt distX = a.X - b.X;
+        ClipperLib::cInt distY = a.Y - b.Y;
+        if(a.X < b.X) distX += toInt(360);
+        if(a.X > b.X) distX -= toInt(360);
+        const float p = 0.1;
+        distX *= p;
+        distY *= p;
+        ClipperLib::IntPoint p1{a.X - distX, a.Y - distY};
+        ClipperLib::IntPoint p2{b.X + distX, b.Y + distY};
+        geojson_output::outputLine(out, a, p1);
+        out << ",";
+        geojson_output::outputLine(out, b, p2);
+        return;
+    }
+    out << "{\n";
+    out << "  \"type\": \"Feature\",\n";
+    out << "  \"geometry\": {";
+    out << "    \"type\": \"LineString\",\n";
+    out << "    \"coordinates\": [";
+    geojson_output::outputPoint(out, a);
+    out << ",";
+    geojson_output::outputPoint(out, b);
+    out << "\n  ]\n  }\n}";
+}
+
 void geojson_output::outputPathStart(std::ostream& out, const ClipperLib::Path& path) {
     out << "{\n";
     out << "  \"type\": \"Feature\",\n";

@@ -1,6 +1,8 @@
 #include "output_paths.hpp"
+#include <iostream>
+#include "output.hpp"
 
-#define LENGTH(T, l) (sizeof(T) * l)
+#define LENGTH(T, l) (sizeof(T) * (l))
 
 void PathsOutput::outputPathStart(const ClipperLib::Path& path) {
     this->lastPathBegin = out.tellp();
@@ -24,6 +26,7 @@ template<bool reverse> void PathsOutput::outputPathMiddle(const ClipperLib::Path
 }
 
 void PathsOutput::outputPathEnd() {
+    // Jump back to beginning to set path length
     this->lastEndOfPath = out.tellp();
     out.seekp(this->lastPathBegin);
     out.write((char *) &(this->sizeOfCurrentPath), LENGTH(this->sizeOfCurrentPath, 1));

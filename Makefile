@@ -7,7 +7,9 @@ SRC = \
       src/output.cpp \
       src/output_geojson.cpp \
       src/output_paths.cpp \
-      src/import_paths.cpp
+      src/import_paths.cpp \
+      src/helper.cpp \
+      src/graph.cpp
 
 SRC_LIBS = \
      3rd_party/clipper/clipper.cpp

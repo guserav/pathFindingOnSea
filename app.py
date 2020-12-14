@@ -31,12 +31,13 @@ def calculateOutlines():
             geojsonOut = os.path.join(outdir, "geojson.json")
             dataOut = os.path.join(outdir, "data.bin")
             backend.parseOSMdata(filename, geojsonOut, dataOut)
+            return flask.redirect(flask.url_for('generateGraph'))
 
     return flask.render_template('calculateOutlines.html', files=files)
 
 @app.route('/generateGraph')
 def generateGraph():
-    return flask.render_template('generateGraph.html', data=data)
+    return flask.render_template('generateGraph.html', data=[])
 
 @app.route('/map')
 def show_map():

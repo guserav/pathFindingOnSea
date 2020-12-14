@@ -11,4 +11,6 @@ namespace geojson_output {
     void outputPathsStart(std::ostream& out);
     void outputPathsEnd(std::ostream& out);
     void outputPaths(std::ostream& out, std::list<ClipperLib::Path>& paths);
+    void outputFeaturePoint(std::ostream& out, const ClipperLib::IntPoint& p);
+    void outputLine(std::ostream& out, const ClipperLib::IntPoint& a, const ClipperLib::IntPoint& b);
 };

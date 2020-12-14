@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}Generate Graph{% endblock %}
+
+{% block content %}
+
+</select>
+    <form action="{{ url_for('generateGraph') }}" method="get">
+        <select name="filename">
+            {% for f in files %}
+            <option value="{{f}}">{{f}}</option>
+            {%endfor%}
+        </select>
+        <input type="number" name="distance">
+        <input type="submit" value="Generate Graphfile (This may take a moment)"/>
+    </form>
+{% endblock %}
