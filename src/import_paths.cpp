@@ -1,6 +1,11 @@
 #include "import_paths.hpp"
+#include "helper.hpp"
+#include <fstream>
 
-#define LENGTH(T, l) (sizeof(T) * (l))
+void paths_import::readIn(std::list<ClipperLib::Path>& paths, const char * filename) {
+    std::ifstream input(filename, std::ios_base::binary);
+    paths_import::readIn(paths, input);
+}
 
 void paths_import::readIn(std::list<ClipperLib::Path>& paths, std::istream& input) {
     size_t path_size = 0;

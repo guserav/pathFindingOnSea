@@ -1,8 +1,7 @@
 #include "output_paths.hpp"
 #include <iostream>
 #include "output.hpp"
-
-#define LENGTH(T, l) (sizeof(T) * (l))
+#include "helper.hpp"
 
 void PathsOutput::outputPathStart(const ClipperLib::Path& path) {
     this->lastPathBegin = out.tellp();

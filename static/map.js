@@ -46,9 +46,11 @@ var backgroundSource = new ol.source.Vector({
     format: new ol.format.GeoJSON({dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857'}),
 });
 
-var p1 = new ol.Feature({geometry: new ol.geom.Point([-3e6,3e6]), name: 'Start'});
-var p2 = new ol.Feature({geometry: new ol.geom.Point([-1e6,-1e6]), name: 'End'});
-var pointCollection = new ol.Collection([p1, p2]);
+var p1 = [-10,10];
+var p2 = [-10,-10];
+var pMap1 = new ol.Feature({geometry: new ol.geom.Point(ol.proj.transform(p2, 'EPSG:4326', 'EPSG:3857')), name: 'Start'});
+var pMap2 = new ol.Feature({geometry: new ol.geom.Point(ol.proj.transform(p2, 'EPSG:4326', 'EPSG:3857')), name: 'End'});
+var pointCollection = new ol.Collection([pMap1, pMap2]);
 
 var startEndSource = new ol.source.Vector({
     features: pointCollection,
@@ -81,13 +83,28 @@ var map = new ol.Map({
 });
 
 var setPoint1 = true;
+const distanceDisplay = document.querySelector('#distance');
+const startDisplay = document.querySelector('#start');
+startDisplay.textContent = p1;
+const endDisplay = document.querySelector('#end');
+endDisplay.textContent = p2;
 map.on('singleclick', function(e){
-    console.log(ol.proj.transform(e.coordinate, e.map.getView().getProjection(), 'EPSG:4326'));
+    var newCords = ol.proj.transform(e.coordinate, e.map.getView().getProjection(), 'EPSG:4326')
+    console.log(newCords);
     if (setPoint1) {
-        p1.setGeometry(new ol.geom.Point(e.coordinate));
+        p1 = newCords;
+        startDisplay.textContent = p1;
+        pMap1.setGeometry(new ol.geom.Point(e.coordinate));
     } else {
-        p2.setGeometry(new ol.geom.Point(e.coordinate));
+        p2 = newCords;
+        endDisplay.textContent = p2;
+        pMap2.setGeometry(new ol.geom.Point(e.coordinate));
     }
+    fetch('/calculateDistance/' + p1[0] + '/' + p1[1] + '/' + p2[0] + '/' + p2[1]).then(function(response) {
+        response.text().then(function(text) {
+            distanceDisplay.textContent = JSON.parse(text)['distance'];
+        });
+    });
     setPoint1 = !setPoint1;
 });
 

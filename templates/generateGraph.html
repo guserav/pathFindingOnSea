@@ -5,12 +5,12 @@
 
 </select>
     <form action="{{ url_for('generateGraph') }}" method="get">
-        <select name="filename">
-            {% for f in files %}
-            <option value="{{f}}">{{f}}</option>
+        <select name="data_source">
+            {% for d in data %}
+            <option value="{{d}}">{{d}}</option>
             {%endfor%}
         </select>
-        <input type="number" name="distance">
+        <input type="number" name="node_count" value=1000>
         <input type="submit" value="Generate Graphfile (This may take a moment)"/>
     </form>
 {% endblock %}

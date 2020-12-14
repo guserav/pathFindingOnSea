@@ -17,7 +17,9 @@ using Edge = struct Edge;
 class Graph {
     public:
         Graph(std::list<ClipperLib::Path>& polygons, size_t N);
+        void output(const char * filename);
         void output(std::ostream& out);
+        void output_geojson(const char * filename);
         void output_geojson(std::ostream& out);
         size_t getIndex(size_t x, size_t y);
         static size_t distance(const Node& a, const Node& b);

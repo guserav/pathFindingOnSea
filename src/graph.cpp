@@ -1,6 +1,7 @@
 #include "graph.hpp"
 #include <cmath>
 #include <iostream>
+#include <fstream>
 #include "helper.hpp"
 #include "output_geojson.hpp"
 
@@ -130,9 +131,12 @@ size_t Graph::getIndex(size_t x, size_t y) {
 }
 
 size_t Graph::distance(const Node& a, const Node& b) {
-    long long distX = a.position.X - b.position.X;
-    long long distY = a.position.Y - b.position.Y;
-    return std::sqrt(distX*distX + distY*distY);
+    return calculate_distance(a.position, b.position);
+}
+
+void Graph::output(const char * filename) {
+    std::ofstream out(filename, std::ios_base::binary);
+    output(out);
 }
 
 void Graph::output(std::ostream& out) {
@@ -147,6 +151,12 @@ void Graph::output(std::ostream& out) {
     out.write((char *) &edges_count, LENGTH(edges_count, 1));
     out.write((char *) edges.data(), LENGTH(Edge, edges_count));
 }
+
+void Graph::output_geojson(const char * filename) {
+    std::ofstream out(filename, std::ios_base::binary);
+    output_geojson(out);
+}
+
 
 void Graph::output_geojson(std::ostream& out) {
     geojson_output::outputPathsStart(out);

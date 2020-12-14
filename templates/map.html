@@ -7,8 +7,9 @@
 {% endblock %}
 
 {% block content %}
-    <div id="map" class="map"></div>
-    <script src="/static/map.js" type="text/javascript"></script>
     <button onClick='javascript:map.updateSize()'>Click me after resizing</button>
     <button onClick='javascript:reloadBackground()'>ReloadBackground</button>
+    [<label id='start'></label>] -&gt; [<label id='end'></label>]:  <label id='distance'></label>m
+    <div id="map" class="map"></div>
+    <script src="/static/map.js" type="text/javascript"></script>
 {% endblock %}
