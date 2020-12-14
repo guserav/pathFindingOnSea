@@ -51,7 +51,6 @@ def checkDataDir(name):
         if os.path.exists(contoursFile):
             contours = True
         graphsMatches = [GRAPH_DATA_RE.fullmatch(x) for x in os.listdir(path)]
-        app.logger.debug(graphsMatches);
         graphs = [m.group(1) for m in graphsMatches if m]
     return contours, graphs
 
@@ -98,9 +97,20 @@ def lastPathGeojson():
     )
     return response
 
+@app.route('/data/json/<data_source>')
+def get_json_for_data(data_source):
+    data_source = data_source.split(";")
+    data = data_source[0]
+    node_count = int(data_source[1])
+    path = os.path.join(DATA_DIR, data, GRAPH_GEOJSON.format(node_count))
+    if os.path.exists(path):
+        return flask.send_from_directory(os.path.join(DATA_DIR, data), GRAPH_GEOJSON.format(node_count), cache_timeout=1)
+    else:
+        return app.response_class(response="", status=404)
+
+
 @app.route('/map')
 def show_map():
     createDirectory(DATA_DIR)
     data={x: checkDataDir(x) for x in os.listdir(DATA_DIR) if checkDataDir(x)[1]}
-    app.logger.debug(data)
     return flask.render_template('map.html', data=data)

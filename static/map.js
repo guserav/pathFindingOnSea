@@ -41,10 +41,7 @@ var styleFunction = function (feature) {
     return styles['default']
 };
 
-var backgroundSource = new ol.source.Vector({
-    url: '/static/backgroundMap.json',
-    format: new ol.format.GeoJSON({dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857'}),
-});
+var backgroundSource = new ol.source.Vector({});
 
 var p1 = [-10,10];
 var p2 = [-10,-10];
@@ -73,7 +70,7 @@ var map = new ol.Map({
         new ol.layer.Tile({
             source: new ol.source.OSM()
         }),
-        backgroundLayer,
+        backgroundLayer, //for the graph and path
         startEndLayer
     ],
     view: new ol.View({
@@ -102,7 +99,7 @@ map.on('singleclick', function(e){
         endDisplay.textContent = p2;
         pMap2.setGeometry(new ol.geom.Point(e.coordinate));
     }
-    fetch('/findPath/' + data_source.selectedOptions[data_source.selectedIndex].value + '/' + p1[0] + '/' + p1[1] + '/' + p2[0] + '/' + p2[1]).then(function(response) {
+    fetch('/findPath/' + data_source.selectedOptions[0].value + '/' + p1[0] + '/' + p1[1] + '/' + p2[0] + '/' + p2[1]).then(function(response) {
         response.text().then(function(text) {
             data = JSON.parse(text);
             distanceDisplay.textContent = data['distance'];
@@ -121,14 +118,17 @@ map.on('singleclick', function(e){
     setPoint1 = !setPoint1;
 });
 
+const showGraphToggle = document.querySelector('#show_graph');
 function reloadBackground() {
-    var vectorSource = new ol.source.Vector({
-        url: '/static/backgroundMap.json',
-        format: new ol.format.GeoJSON({dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857'}),
-    });
-    var vectorLayer = new ol.layer.Vector({
-        source: vectorSource,
-        style: styleFunction,
-    });
-    map.getLayers().setAt(1, vectorLayer);
+    if(showGraphToggle.checked) {
+        var vectorSource = new ol.source.Vector({
+            url: '/data/json/' + data_source.selectedOptions[0].value,
+            format: new ol.format.GeoJSON({dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857'}),
+        });
+        var vectorLayer = new ol.layer.Vector({
+            source: vectorSource,
+            style: styleFunction,
+        });
+        map.getLayers().setAt(1, vectorLayer);
+    }
 }

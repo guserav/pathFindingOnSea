@@ -34,7 +34,7 @@ class Graph {
         PathData getPath(const ClipperLib::IntPoint& from, const ClipperLib::IntPoint& to);
 
     private:
-        void addEdgeIfNodeExists(size_t x, size_t y, const Node& node);
+        void addEdgeIfNodeExists(long long x, long long y, const Node& node);
         std::vector<Edge> edges;
         std::vector<Node> nodes;
         size_t pointsInX;

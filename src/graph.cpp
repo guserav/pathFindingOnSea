@@ -93,15 +93,15 @@ Graph::Graph(std::list<ClipperLib::Path>& polygons, size_t N) {
     }
     std::cerr << "\nDone generating Points" << std::endl;
 
-    for(size_t x = 0; x < pointsInX; x++) {
-        for(size_t y = 0; y < pointsInY; y++) {
+    for(long long x = 0; x < pointsInX; x++) {
+        for(long long y = 0; y < pointsInY; y++) {
             size_t index = x * pointsInY + y;
             std::cerr << "\r" << index;
             Node& node = nodes.at(index);
             node.edge_offset = edges.size();
             if(node.onWater) {
-                for(int i = -1; i <= 1; i++) {
-                    for(int j = -1; j <= 1; j++) {
+                for(long long i = -1; i <= 1; i++) {
+                    for(long long j = -1; j <= 1; j++) {
                         if(i|j) {
                             addEdgeIfNodeExists(x + i, y + j, node);
                         }
@@ -131,7 +131,7 @@ Graph::Graph(const char * filename) {
     input.read((char *) edges.data(), LENGTH(Edge, edges_count));
 }
 
-void Graph::addEdgeIfNodeExists(size_t x, size_t y, const Node& node) {
+void Graph::addEdgeIfNodeExists(long long x, long long y, const Node& node) {
     if(x < 0) x = pointsInX - 1;
     if(y < 0) return;
     if(x >= pointsInX) x = 0;
