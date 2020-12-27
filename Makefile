@@ -9,6 +9,7 @@ SRC = \
       src/output_paths.cpp \
       src/import_paths.cpp \
       src/helper.cpp \
+      src/checks.cpp \
       src/graph.cpp
 
 SRC_LIBS = \
