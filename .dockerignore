@@ -1,0 +1,5 @@
+input/
+data/
+build/
+Dockerfile
+.dockerignore
