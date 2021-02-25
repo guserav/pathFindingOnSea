@@ -32,7 +32,7 @@ OBJ_CLI = $(addprefix $(OBJDIR)/,$(SRC_CLI:.cpp=.o))
 OBJ_PYTHON = $(addprefix $(OBJDIR)/,$(SRC_PYTHON:.cpp=.o))
 OBJ_LIBS = $(addprefix $(OBJDIR)/,$(SRC_LIBS:.cpp=.o))
 
-CXX_FLAGS_BASE= --std=c++17 $(INC) -MP -MMD
+CXX_FLAGS_BASE= --std=c++17 $(INC) -MP -MMD -fPIC
 CXX_FLAGS= $(CXX_FLAGS_BASE) -lpthread -lz -lexpat -lbz2
 LIBS_BASE=
 LIBS_PYTHON= $(LIBS_BASE) python3
