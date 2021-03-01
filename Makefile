@@ -38,7 +38,7 @@ CXX_FLAGS= $(CXX_FLAGS_BASE) -lpthread -lz -lexpat -lbz2
 LIBS_BASE=
 LIBS_PYTHON= $(LIBS_BASE) python3
 
-DEBUG=0
+DEBUG?=0
 ifeq ($(DEBUG), 0)
 	CXX_FLAGS += -O3
 	BUILD_DIR = $(BASE_BUILD_DIR)/release
