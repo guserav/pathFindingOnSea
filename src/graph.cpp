@@ -5,58 +5,24 @@
 #include <fstream>
 #include "helper.hpp"
 #include "output_geojson.hpp"
+#include "outline_holder.hpp"
 
 #define AREABOUND_WEST -180.
 #define AREABOUND_EAST 180.
 #define AREABOUND_NORTH 85.
 #define AREABOUND_SOUTH -85.
+const ClipperLib::IntRect world_boundary = {
+    .left = toInt(AREABOUND_WEST),
+    .top = toInt(AREABOUND_NORTH),
+    .right = toInt(AREABOUND_EAST),
+    .bottom = toInt(AREABOUND_SOUTH)
+};
 
 /*
  * Scale N to a square to determine how many points to actually place
  */
 float pointsForSquare(size_t N) {
     return N * (AREABOUND_EAST - AREABOUND_WEST) / (AREABOUND_NORTH - AREABOUND_WEST);
-}
-
-bool isPointInRectangle(const ClipperLib::IntRect& r, const ClipperLib::IntPoint& p) {
-    if(p.X < r.left) return false;
-    if(p.X > r.right) return false;
-    if(p.Y < r.bottom) return false;
-    if(p.Y > r.top) return false;
-    return true;
-}
-
-bool isPointInWater(const std::list<ClipperLib::Path>& polygons, const std::vector<ClipperLib::IntRect>& outlines, const ClipperLib::IntPoint& p) {
-    size_t i = 0;
-    for(auto it = polygons.begin(); it != polygons.end(); it++) {
-        if (isPointInRectangle(outlines[i], p)) {
-            if (ClipperLib::PointInPolygon(p, *it)) {
-                return false;
-            }
-        }
-        i++;
-    }
-    return true;
-}
-
-void calculateOutlines(const ClipperLib::Path& path, ClipperLib::IntRect& rect) {
-    rect.left = path.front().X;
-    rect.right = path.front().X;
-    rect.bottom = path.front().Y;
-    rect.top = path.front().Y;
-
-    for(const auto& point : path) {
-        if(point.X < rect.left) {
-            rect.left = point.X;
-        } else if(point.X > rect.right){
-            rect.right = point.X;
-        }
-        if(point.Y < rect.bottom) {
-            rect.bottom = point.Y;
-        } else if(point.Y > rect.top){
-            rect.top = point.Y;
-        }
-    }
 }
 
 Graph::Graph(std::list<ClipperLib::Path>& polygons, size_t N) {
@@ -72,30 +38,26 @@ Graph::Graph(std::list<ClipperLib::Path>& polygons, size_t N) {
     std::cerr << "pointsInY: " << pointsInY << std::endl;
 
     nodes.resize(N + 1);
-    std::vector<ClipperLib::IntRect> boundingBoxes(polygons.size());
-    size_t i = 0;
-    for(auto it = polygons.begin(); it != polygons.end(); it++) {
-        calculateOutlines(*it, boundingBoxes[i]);
-        i++;
-    }
+    //OutlineHolderSimple outline_holder(polygons);
+    TreeOutlineHolder outline_holder(polygons);
     std::cerr << "Done calculating Outlines" << std::endl;
     for(size_t x = 0; x < pointsInX; x++) {
-        float curX = AREABOUND_WEST + x * distanceX + distanceX / 2;
+        const float curX = AREABOUND_WEST + x * distanceX + distanceX / 2;
         for(size_t y = 0; y < pointsInY; y++) {
-            float curY = AREABOUND_SOUTH + y * distanceY + distanceY / 2;
-            size_t index = x * pointsInY + y;
+            const float curY = AREABOUND_SOUTH + y * distanceY + distanceY / 2;
+            const size_t index = getIndex(x, y);
             std::cerr << "\r" << index;
             Node& node = nodes.at(index);
             node.position.X = toInt(curX);
             node.position.Y = toInt(curY);
-            node.onWater = isPointInWater(polygons, boundingBoxes, node.position);
+            node.onWater = outline_holder.isPointInWater(node.position);
         }
     }
     std::cerr << "\nDone generating Points" << std::endl;
 
     for(long long x = 0; x < pointsInX; x++) {
         for(long long y = 0; y < pointsInY; y++) {
-            size_t index = x * pointsInY + y;
+            const size_t index = getIndex(x, y);
             std::cerr << "\r" << index;
             Node& node = nodes.at(index);
             node.edge_offset = edges.size();

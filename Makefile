@@ -4,6 +4,7 @@ ECHO=$(QUIET)echo
 PKG_CONFIG=pkg-config
 SRC = \
       src/osmium_import.cpp \
+      src/outline_holder.cpp \
       src/output.cpp \
       src/output_geojson.cpp \
       src/output_paths.cpp \

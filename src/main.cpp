@@ -10,20 +10,23 @@
 #include "graph.hpp"
 #include "checks.hpp"
 
+void testGraphCreation(char * filename, size_t node_count) {
+    std::list<ClipperLib::Path> paths;
+    paths_import::readIn(paths, filename);
+    size_t distribution[sizeof(size_t) * 8] = {0};
+    for(const auto& p:paths) {
+        int leading_zeros = __builtin_clzll(p.size() | 1);
+        distribution[sizeof(size_t) * 8 - leading_zeros - 1]++;
+    }
+    for(size_t i = 0; i < sizeof(size_t) * 8; i++) {
+        // std::cerr << "2 ^ " << i << ": " << distribution[i] << std::endl;
+    }
+
+    Graph g(paths, node_count);
+}
 
 int main(int argc, char ** argv) {
     if (argc < 2) return 10;
 
-    checkMaximumError(argv[1]);
-
-    //Graph g(argv[1]);
-    //ClipperLib::IntPoint from{toInt(-5.1), toInt(42)};
-    //ClipperLib::IntPoint to{toInt(-37), toInt(37)};
-    //PathData path = g.getPath(from, to);
-
-    //std::ofstream out(argv[2]);
-    //geojson_output::outputPathsStart(out);
-    //geojson_output::outputPath(out, path.path);
-    //geojson_output::outputPathsEnd(out);
-    //std::cerr << path.length << std::endl;
+    testGraphCreation(argv[1], 10000);
 }

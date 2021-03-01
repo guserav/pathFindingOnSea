@@ -50,5 +50,14 @@ inline ClipperLib::IntPoint getMidpoint(const ClipperLib::IntPoint& a, const Cli
     return {fromRad(c_lon), fromRad(c_lat)};
 }
 
+inline bool isPointInRectangle(const ClipperLib::IntRect& r, const ClipperLib::IntPoint& p) {
+    if(p.X < r.left) return false;
+    if(p.X > r.right) return false;
+    if(p.Y < r.bottom) return false;
+    if(p.Y > r.top) return false;
+    return true;
+}
+
+
 bool checkForJumpCrossing(const ClipperLib::IntPoint& a, const ClipperLib::IntPoint& b);
 bool checkForJumpCrossing(std::list<ClipperLib::Path>& paths);
