@@ -114,7 +114,7 @@ PyObject * pyGraphPath(PyObject *pself, PyObject *args) {
     ClipperLib::IntPoint a{toInt(x1), toInt(y1)};
     ClipperLib::IntPoint b{toInt(x2), toInt(y2)};
     float distance = calculate_distance(a, b);
-    PathData p = self->graph->getPath(a, b);
+    PathData p = self->graph->getPathDijkstra(a, b);
 
     std::stringstream out(std::ios_base::out);
     geojson_output::outputPathsStart(out);
