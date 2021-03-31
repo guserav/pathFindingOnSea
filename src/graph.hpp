@@ -16,6 +16,7 @@ using Edge = struct Edge;
 
 struct PathData {
     ClipperLib::Path path;
+    size_t heap_accesses;
     size_t length;
 };
 using PathData = struct PathData;

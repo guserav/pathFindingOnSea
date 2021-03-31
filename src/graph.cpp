@@ -188,7 +188,7 @@ bool compareDijkstra(const HeapElemDijkstra& a, const HeapElemDijkstra& b) {
 }
 
 PathData Graph::getPathDijkstra(const ClipperLib::IntPoint& from, const ClipperLib::IntPoint& to) {
-    PathData ret{.length = 0};
+    PathData ret{.heap_accesses = 0, .length = 0};
     size_t fromIndex = getNearestNode(from);
     size_t toIndex = getNearestNode(to);
 
@@ -199,6 +199,7 @@ PathData Graph::getPathDijkstra(const ClipperLib::IntPoint& from, const ClipperL
     std::push_heap(dijkstraHeap.begin(), dijkstraHeap.end(), &compareDijkstra);
 
     while(dijkstraHeap.size()) {
+        ret.heap_accesses++;
         std::pop_heap(dijkstraHeap.begin(), dijkstraHeap.end(), &compareDijkstra);
         HeapElemDijkstra current = dijkstraHeap.back();
         dijkstraHeap.pop_back();
