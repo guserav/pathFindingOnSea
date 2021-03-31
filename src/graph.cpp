@@ -227,11 +227,13 @@ PathData Graph::getPathDijkstra(const ClipperLib::IntPoint& from, const ClipperL
     }
 
     size_t current = toIndex;
-    ret.path.emplace_back(nodes[current].position);
-    while(current != fromIndex) {
-        const NodeDijkstraData& c = dijkstraData[current];
-        current = c.prev;
+    if(dijkstraData[toIndex].distanceHere != SIZE_MAX) {
         ret.path.emplace_back(nodes[current].position);
+        while(current != fromIndex) {
+            const NodeDijkstraData& c = dijkstraData[current];
+            current = c.prev;
+            ret.path.emplace_back(nodes[current].position);
+        }
     }
     // The path is reverse but we only want to display it so it doesn't matter
     return ret;
