@@ -87,19 +87,9 @@ startDisplay.textContent = p1;
 const endDisplay = document.querySelector('#end');
 endDisplay.textContent = p2;
 const data_source = document.querySelector('#data_source');
-map.on('singleclick', function(e){
-    var newCords = ol.proj.transform(e.coordinate, e.map.getView().getProjection(), 'EPSG:4326')
-    console.log(newCords);
-    if (setPoint1) {
-        p1 = newCords;
-        startDisplay.textContent = p1;
-        pMap1.setGeometry(new ol.geom.Point(e.coordinate));
-    } else {
-        p2 = newCords;
-        endDisplay.textContent = p2;
-        pMap2.setGeometry(new ol.geom.Point(e.coordinate));
-    }
-    fetch('/findPath/' + data_source.selectedOptions[0].value + '/' + p1[0] + '/' + p1[1] + '/' + p2[0] + '/' + p2[1]).then(function(response) {
+const algorithm = document.querySelector('#algorithm');
+function findPath() {
+    fetch('/findPath/' + data_source.selectedOptions[0].value + '/' + p1[0] + '/' + p1[1] + '/' + p2[0] + '/' + p2[1] + '/' + algorithm.selectedOptions[0].value).then(function(response) {
         response.text().then(function(text) {
             data = JSON.parse(text);
             distanceDisplay.textContent = data['distance'];
@@ -115,8 +105,23 @@ map.on('singleclick', function(e){
             map.getLayers().setAt(1, vectorLayer);
         });
     });
+}
+map.on('singleclick', function(e){
+    var newCords = ol.proj.transform(e.coordinate, e.map.getView().getProjection(), 'EPSG:4326')
+    console.log(newCords);
+    if (setPoint1) {
+        p1 = newCords;
+        startDisplay.textContent = p1;
+        pMap1.setGeometry(new ol.geom.Point(e.coordinate));
+    } else {
+        p2 = newCords;
+        endDisplay.textContent = p2;
+        pMap2.setGeometry(new ol.geom.Point(e.coordinate));
+    }
+    findPath();
     setPoint1 = !setPoint1;
 });
+
 
 function reloadBackground() {
     var vectorSource = new ol.source.Vector({

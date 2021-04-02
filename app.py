@@ -77,14 +77,14 @@ def generateGraph():
 def calculateDistance(x1, y1, x2, y2):
     return flask.jsonify({'distance': backend.calculate_distance(float(x1), float(y1), float(x2), float(y2))}), 200
 
-@app.route('/findPath/<data_source>/<x1>/<y1>/<x2>/<y2>')
-def getPath(data_source, x1, y1, x2, y2):
+@app.route('/findPath/<data_source>/<x1>/<y1>/<x2>/<y2>/<algorithm>')
+def getPath(data_source, x1, y1, x2, y2, algorithm):
     global LAST_PATH_GEOJSON
     data_source = data_source.split(";")
     data = data_source[0]
     node_count = int(data_source[1])
     graph = backend.Graph(os.path.join(DATA_DIR, data, GRAPH_DATA.format(node_count)))
-    path_data = graph.find_path(float(x1), float(y1), float(x2), float(y2))
+    path_data = graph.find_path(float(x1), float(y1), float(x2), float(y2), int(algorithm))
     LAST_PATH_GEOJSON = path_data['geojson']
     return flask.jsonify(path_data), 200
 
@@ -114,4 +114,4 @@ def get_json_for_data(data_source):
 def show_map():
     createDirectory(DATA_DIR)
     data={x: checkDataDir(x) for x in os.listdir(DATA_DIR) if checkDataDir(x)[1]}
-    return flask.render_template('map.html', data=data)
+    return flask.render_template('map.html', data=data, algorithms=backend.ALGORITHMS)

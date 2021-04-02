@@ -33,6 +33,7 @@ class Graph {
         static size_t distance(const Node& a, const Node& b);
         size_t getNearestNode(const ClipperLib::IntPoint& x);
         PathData getPathDijkstra(const ClipperLib::IntPoint& from, const ClipperLib::IntPoint& to);
+        PathData getPathAStar(const ClipperLib::IntPoint& from, const ClipperLib::IntPoint& to);
 
     private:
         void addEdgeIfNodeExists(long long x, long long y, const Node& node);

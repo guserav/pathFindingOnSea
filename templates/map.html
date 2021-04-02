@@ -22,6 +22,15 @@
     <button onClick='javascript:reloadBackground()'>load Graph as Background</button>
 </p>
 <p>
+    <label>Algorithm</label>
+    <select name="algorithm" id="algorithm">
+        {% for id,name in algorithms %}
+            <option value="{{id}}">{{name}}</option>
+        {%endfor%}
+    </select>
+    <button onClick='javascript:findPath()'>Reload Path</button>
+</p>
+<p>
     [<span id='start'></span>] -&gt; [<span id='end'></span>]: <br/>
     Distance over "Air": <span id='distance'></span>m <br/>
     Length of found path: <span id='length'></span>m

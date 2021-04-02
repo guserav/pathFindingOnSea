@@ -11,7 +11,9 @@ SRC = \
       src/import_paths.cpp \
       src/helper.cpp \
       src/checks.cpp \
-      src/graph.cpp
+      src/graph.cpp \
+      src/dijkstra.cpp \
+      src/A_star.cpp
 
 SRC_LIBS = \
      3rd_party/clipper/clipper.cpp

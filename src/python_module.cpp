@@ -9,6 +9,9 @@
 #include "helper.hpp"
 #include "output_geojson.hpp"
 
+#define ALGORITHM_DIJKSTRA 1
+#define ALGORITHM_A_STAR 2
+
 #define MODULE_NAME "backend"
 #define START_FUNC try {
 #define ENDFUNC \
@@ -106,7 +109,8 @@ PyObject * pyGraphOutput_geojson(PyObject *pself, PyObject *args) {
 
 PyObject * pyGraphPath(PyObject *pself, PyObject *args) {
     float x1, y1, x2, y2;
-    if (!PyArg_ParseTuple(args, "ffff", &x1, &y1, &x2, &y2)) {
+    int algorithm = ALGORITHM_A_STAR;
+    if (!PyArg_ParseTuple(args, "ffffi", &x1, &y1, &x2, &y2, &algorithm)) {
         return NULL;
     }
     START_FUNC;
@@ -114,7 +118,17 @@ PyObject * pyGraphPath(PyObject *pself, PyObject *args) {
     ClipperLib::IntPoint a{toInt(x1), toInt(y1)};
     ClipperLib::IntPoint b{toInt(x2), toInt(y2)};
     float distance = calculate_distance(a, b);
-    PathData p = self->graph->getPathDijkstra(a, b);
+    PathData p;
+    switch (algorithm) {
+        case ALGORITHM_DIJKSTRA:
+            p = self->graph->getPathDijkstra(a, b);
+            break;
+        case ALGORITHM_A_STAR:
+            p = self->graph->getPathAStar(a, b);
+            break;
+        default:
+            throw std::runtime_error("Unknown Algorithm");
+    }
 
     std::stringstream out(std::ios_base::out);
     geojson_output::outputPathsStart(out);
@@ -253,15 +267,46 @@ extern "C" {
     PyMODINIT_FUNC PyInit_backend(void);
 }
 
+PyObject* getAlgorithmTuple() {
+    PyObject* dijkstra = Py_BuildValue("(is)", ALGORITHM_DIJKSTRA, "Dijkstra");
+    if(NULL == dijkstra) {
+        return NULL;
+    }
+    PyObject* a_star = Py_BuildValue("(is)", ALGORITHM_A_STAR, "A*");
+    if(NULL == a_star) {
+        Py_DecRef(dijkstra);
+        return NULL;
+    }
+    PyObject* tuple = Py_BuildValue("(NN)", dijkstra, a_star);
+    if(NULL == tuple) {
+        Py_DecRef(dijkstra);
+        Py_DecRef(a_star);
+        return NULL;
+    }
+    return tuple;
+}
+
 PyMODINIT_FUNC PyInit_backend(void) {
     PyObject * m = PyModule_Create(&backendmodule);
     if(PyType_Ready(&GraphType) < 0) {
         return NULL;
     }
+    PyObject* algorithmTuple = getAlgorithmTuple();
+    if (NULL == algorithmTuple) {
+        Py_DECREF(m);
+        return NULL;
+    }
+    if (PyModule_AddObject(m, "ALGORITHMS", algorithmTuple) < 0) {
+        Py_DECREF(m);
+        Py_DECREF(algorithmTuple);
+        return NULL;
+    }
+
     Py_INCREF(&GraphType);
     if (PyModule_AddObject(m, "Graph", (PyObject *) &GraphType) < 0) {
         Py_DECREF(&GraphType);
         Py_DECREF(m);
+        Py_DECREF(algorithmTuple);
         return NULL;
     }
     return m;
