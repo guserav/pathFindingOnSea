@@ -35,6 +35,12 @@ PathData Graph::getPathDijkstra(const ClipperLib::IntPoint& from, const ClipperL
         dijkstraHeap.pop_back();
 
         NodeDijkstraData& node = dijkstraData[current.node];
+        if(current.node == toIndex){
+            node.prev = current.prev;
+            node.distanceHere = current.distanceHere;
+            ret.length = current.distanceHere;
+            break;
+        }
         if(current.distanceHere < node.distanceHere) {
             node.distanceHere = current.distanceHere;
             node.prev = current.prev;
@@ -48,10 +54,6 @@ PathData Graph::getPathDijkstra(const ClipperLib::IntPoint& from, const ClipperL
                     dijkstraHeap.push_back({.distanceHere = dist, .prev = current.node, .node = edge.dest});
                     std::push_heap(dijkstraHeap.begin(), dijkstraHeap.end(), &compareDijkstra);
                 }
-            }
-            if(current.node == toIndex){
-                ret.length = current.distanceHere;
-                break;
             }
         }
     }

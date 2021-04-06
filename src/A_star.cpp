@@ -37,6 +37,12 @@ PathData Graph::getPathAStar(const ClipperLib::IntPoint& from, const ClipperLib:
         astarHeap.pop_back();
 
         NodeAStarData& node = astarData[current.node];
+        if(current.node == toIndex){
+            node.prev = current.prev;
+            node.distanceHere = current.distanceHere;
+            ret.length = current.distanceHere;
+            break;
+        }
         if(current.distanceHere < node.distanceHere) {
             node.distanceHere = current.distanceHere;
             node.prev = current.prev;
@@ -50,10 +56,6 @@ PathData Graph::getPathAStar(const ClipperLib::IntPoint& from, const ClipperLib:
                     astarHeap.push_back({.distanceHere = dist, .sortValue = dist + distance(nodes[edge.dest], toNode), .prev = current.node, .node = edge.dest});
                     std::push_heap(astarHeap.begin(), astarHeap.end(), &compareAStar);
                 }
-            }
-            if(current.node == toIndex){
-                ret.length = current.distanceHere;
-                break;
             }
         }
     }
