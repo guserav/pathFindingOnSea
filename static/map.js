@@ -82,6 +82,8 @@ var map = new ol.Map({
 var setPoint1 = true;
 const distanceDisplay = document.querySelector('#distance');
 const lengthDisplay = document.querySelector('#length');
+const time_takenDisplay = document.querySelector('#time_taken');
+const heap_accessesDisplay = document.querySelector('#heap_accesses');
 const startDisplay = document.querySelector('#start');
 startDisplay.textContent = p1;
 const endDisplay = document.querySelector('#end');
@@ -94,6 +96,8 @@ function findPath() {
             data = JSON.parse(text);
             distanceDisplay.textContent = data['distance'];
             lengthDisplay.textContent = data['length'];
+            time_takenDisplay.textContent = data['time_taken'];
+            heap_accessesDisplay.textContent = data['heap_accesses'];
             var vectorSource = new ol.source.Vector({
                 url: '/lastPath.json',
                 format: new ol.format.GeoJSON({dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857'}),

@@ -1,6 +1,7 @@
 #include <Python.h>
 #include "osmium_import.hpp"
 #include "output.hpp"
+#include <chrono>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -119,6 +120,7 @@ PyObject * pyGraphPath(PyObject *pself, PyObject *args) {
     ClipperLib::IntPoint b{toInt(x2), toInt(y2)};
     float distance = calculate_distance(a, b);
     PathData p;
+    auto start = std::chrono::high_resolution_clock::now();
     switch (algorithm) {
         case ALGORITHM_DIJKSTRA:
             p = self->graph->getPathDijkstra(a, b);
@@ -129,6 +131,8 @@ PyObject * pyGraphPath(PyObject *pself, PyObject *args) {
         default:
             throw std::runtime_error("Unknown Algorithm");
     }
+    auto stop = std::chrono::high_resolution_clock::now();
+    long long duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
 
     std::stringstream out(std::ios_base::out);
     geojson_output::outputPathsStart(out);
@@ -163,6 +167,25 @@ PyObject * pyGraphPath(PyObject *pself, PyObject *args) {
         Py_DECREF(dict);
         return NULL;
     }
+    Py_DECREF(length);
+
+    PyObject * time_taken = PyLong_FromSize_t(duration);
+    ALLOC_CHECK(time_taken);
+    if(PyDict_SetItemString(dict, "time_taken", time_taken) < 0) {
+        Py_DECREF(time_taken);
+        Py_DECREF(dict);
+        return NULL;
+    }
+    Py_DECREF(time_taken);
+
+    PyObject * heap_accesses = PyLong_FromSize_t(p.heap_accesses);
+    ALLOC_CHECK(heap_accesses);
+    if(PyDict_SetItemString(dict, "heap_accesses", heap_accesses) < 0) {
+        Py_DECREF(heap_accesses);
+        Py_DECREF(dict);
+        return NULL;
+    }
+    Py_DECREF(heap_accesses);
 
     PyObject * pyDistance = PyFloat_FromDouble(distance);
     ALLOC_CHECK(pyDistance);
