@@ -47,11 +47,33 @@ void getStatsOnPolygons(char * input, char * output_s) {
 void testGraphCreation(char * filename, size_t node_count) {
     std::list<ClipperLib::Path> paths;
     paths_import::readIn(paths, filename);
-    Graph g(paths, node_count);
+    if(node_count < 2000) {
+        OutlineHolderSimple outline_holder(paths);
+        Graph g(outline_holder, node_count);
+    } else {
+        TreeOutlineHolder outline_holder(paths);
+        Graph g(outline_holder, node_count);
+    }
 }
 
-int main(int argc, char ** argv) {
-    if (argc < 3) return 10;
+#define CHECK_PARAMETER(s, e) \
+    if(argc < e + 2) { \
+        std::cerr << "Missing parameters" << s << std::endl; \
+        return 10; \
+    }
 
-    getStatsOnPolygons(argv[1], argv[2]);
+int main(int argc, char ** argv) {
+    if (argc < 2) return 20;
+    std::string task(argv[1]);
+    if(task == "stats") {
+        CHECK_PARAMETER("Expected: input, output_s", 2);
+        getStatsOnPolygons(argv[2], argv[3]);
+    } else if(task == "create") {
+        CHECK_PARAMETER("Expected: input, node_count", 2);
+        size_t node_count = atoll(argv[3]);
+        testGraphCreation(argv[2], node_count);
+    } else {
+        std::cerr << "Unknown task: " << task << std::endl;
+    }
+
 }

@@ -14,13 +14,13 @@ class OutlineHolder {
         std::vector<ClipperLib::IntRect> boundingBoxes;
 };
 
-class OutlineHolderSimple : OutlineHolder {
+class OutlineHolderSimple : public OutlineHolder {
     public:
         OutlineHolderSimple(const std::list<ClipperLib::Path>& polygons): OutlineHolder(polygons) {};
         virtual bool isPointInWater(const ClipperLib::IntPoint& p);
 };
 
-class RectangleOutlineHolder : OutlineHolder {
+class RectangleOutlineHolder : public OutlineHolder {
     public:
         RectangleOutlineHolder(const std::list<ClipperLib::Path>& polygons);
         virtual bool isPointInWater(const ClipperLib::IntPoint& p);
@@ -44,7 +44,7 @@ class OutlineTree {
         std::vector<ClipperLib::IntRect> boundaries;
 };
 
-class TreeOutlineHolder : OutlineHolder {
+class TreeOutlineHolder : public OutlineHolder {
     public:
         TreeOutlineHolder(const std::list<ClipperLib::Path>& polygons);
         virtual bool isPointInWater(const ClipperLib::IntPoint& p);

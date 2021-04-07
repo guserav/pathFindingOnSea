@@ -1,5 +1,6 @@
 #pragma once
 #include <clipper.hpp>
+#include "outline_holder.hpp"
 
 struct Node {
     ClipperLib::IntPoint position;
@@ -8,11 +9,25 @@ struct Node {
 };
 using Node = struct Node;
 
+struct NodeCH {
+    ClipperLib::IntPoint position;
+    size_t edge_offset;
+    size_t priority;
+};
+using NodeCH = struct NodeCH;
+
 struct Edge {
     size_t dest;
     size_t length;
 };
 using Edge = struct Edge;
+
+struct EdgeCH {
+    size_t dest;
+    size_t length;
+    size_t p1, p2; // Edge index of first and part
+};
+using EdgeCH = struct EdgeCH;
 
 struct PathData {
     ClipperLib::Path path;
@@ -23,7 +38,7 @@ using PathData = struct PathData;
 
 class Graph {
     public:
-        Graph(std::list<ClipperLib::Path>& polygons, size_t N);
+        Graph(OutlineHolder& outline_holder, size_t N);
         Graph(const char * filename);
         void output(const char * filename);
         void output(std::ostream& out);
@@ -36,9 +51,14 @@ class Graph {
         PathData getPathAStar(const ClipperLib::IntPoint& from, const ClipperLib::IntPoint& to);
 
     private:
+        void generateGraph(OutlineHolder& outline_holder, size_t N);
+        void generateCH();
         void addEdgeIfNodeExists(long long x, long long y, const Node& node);
         std::vector<Edge> edges;
         std::vector<Node> nodes;
+        //std::vector<size_t> node_map; // Maps from normal node index to CH node index
+        std::vector<EdgeCH> edges_ch;
+        std::vector<NodeCH> nodes_ch;
         size_t pointsInX;
         size_t pointsInY;
 };

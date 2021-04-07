@@ -233,7 +233,13 @@ static int PyGraphInit(PyObject *pself, PyObject *args, PyObject *kwds)
                 PyErr_SetString(PyExc_ValueError, "There are polygon edges that cross the 180 meridian");
                 return -1;
             }
-            new_graph = new Graph(paths, node_count);
+            if(node_count < 2000) {
+                OutlineHolderSimple outline_holder(paths);
+                new_graph = new Graph(outline_holder, node_count);
+            } else {
+                TreeOutlineHolder outline_holder(paths);
+                new_graph = new Graph(outline_holder, node_count);
+            }
         } else { // TODO
             new_graph = new Graph(filename);
         }
