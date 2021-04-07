@@ -173,3 +173,8 @@ cython_debug/
 # Input data
 input/
 data/
+
+# Eclipse
+.project
+.cproject
+.settings/
