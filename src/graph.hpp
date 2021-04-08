@@ -2,6 +2,11 @@
 #include <clipper.hpp>
 #include "outline_holder.hpp"
 
+#define ALGORITHM_DIJKSTRA 1
+#define ALGORITHM_A_STAR 2
+#define ALGORITHM_CH_DIJSKTRA 3
+
+
 struct Node {
     ClipperLib::IntPoint position;
     size_t edge_offset;
@@ -33,6 +38,8 @@ struct PathData {
     ClipperLib::Path path;
     size_t heap_accesses;
     size_t length;
+    float distance;
+    long long duration;
 };
 using PathData = struct PathData;
 
@@ -44,10 +51,12 @@ class Graph {
         void output(std::ostream& out);
         void output_geojson(const char * filename);
         void output_geojson(std::ostream& out);
+        void output_geojsonCH(std::ostream& out);
         size_t getIndex(size_t x, size_t y);
         static size_t distance(const Node& a, const Node& b);
         size_t getNearestNode(const ClipperLib::IntPoint& x);
         PathData getPathDijkstra(const ClipperLib::IntPoint& from, const ClipperLib::IntPoint& to);
+        PathData getPathCHDijkstra(const ClipperLib::IntPoint& from, const ClipperLib::IntPoint& to);
         PathData getPathAStar(const ClipperLib::IntPoint& from, const ClipperLib::IntPoint& to);
 
     private:
@@ -62,3 +71,5 @@ class Graph {
         size_t pointsInX;
         size_t pointsInY;
 };
+
+PathData findPath(Graph* graph, float x1, float y1, float x2, float y2, int algorithm);

@@ -1,6 +1,7 @@
 #include "graph.hpp"
 #include <algorithm>
 #include <cmath>
+#include <chrono>
 #include <cassert>
 #include <iostream>
 #include <fstream>
@@ -133,6 +134,7 @@ void Graph::generateCH() {
         }
     }
     while(remainingNodes) {
+        std::cerr << remainingNodes << "                   \r";
         std::vector<bool> visitedIndependece(N, false);
         currentPriority++;
         std::vector<EDStruct> indexesForED(remainingNodes);
@@ -260,7 +262,7 @@ void Graph::generateCH() {
                         }
                     }
                     for(size_t k = 0; k < neighbourCount; k++) {
-                        if(k != j && dijkstraData[k].overThisNode && !dijkstraData[k].alternative) {
+                        if(k != j && dijkstraData[k].overThisNode && true/*TODO!dijkstraData[k].alternative*/) {
                             const size_t from = neighbours[j].index;
                             const size_t to = neighbours[k].index;
                             auto& edgesOfNeighbour = tmpEdges[from];
@@ -299,6 +301,9 @@ void Graph::generateCH() {
                 .dest = e.destination,
                 .length = e.length,
             };
+            assert(newEdge.length != 0);
+            assert(newEdge.length != SIZE_MAX);
+            assert(i != e.destination);
             edges_ch.push_back(newEdge);
         }
     }
@@ -322,14 +327,21 @@ Graph::Graph(const char * filename) {
     input.read((char *) &nodes_count, LENGTH(nodes_count, 1));
     nodes.resize(nodes_count);
     input.read((char *) nodes.data(), LENGTH(Node, nodes_count));
+    nodes_ch.resize(nodes_count);
+    input.read((char *) nodes_ch.data(), LENGTH(NodeCH, nodes_count));
 
     input.read((char *) &pointsInX, LENGTH(pointsInX, 1));
     input.read((char *) &pointsInY, LENGTH(pointsInY, 1));
 
-    size_t edges_count = edges.size();
+    size_t edges_count = 0;
     input.read((char *) &edges_count, LENGTH(edges_count, 1));
     edges.resize(edges_count);
     input.read((char *) edges.data(), LENGTH(Edge, edges_count));
+
+    size_t edges_ch_count = 0;
+    input.read((char *) &edges_ch_count, LENGTH(edges_ch_count, 1));
+    edges_ch.resize(edges_ch_count);
+    input.read((char *) edges_ch.data(), LENGTH(EdgeCH, edges_ch_count));
 }
 
 void Graph::addEdgeIfNodeExists(long long x, long long y, const Node& node) {
@@ -361,6 +373,7 @@ void Graph::output(std::ostream& out) {
     size_t nodes_count = nodes.size();
     out.write((char *) &nodes_count, LENGTH(nodes_count, 1));
     out.write((char *) nodes.data(), LENGTH(Node, nodes_count));
+    out.write((char *) nodes_ch.data(), LENGTH(NodeCH, nodes_count));
 
     out.write((char *) &pointsInX, LENGTH(pointsInX, 1));
     out.write((char *) &pointsInY, LENGTH(pointsInY, 1));
@@ -368,11 +381,15 @@ void Graph::output(std::ostream& out) {
     size_t edges_count = edges.size();
     out.write((char *) &edges_count, LENGTH(edges_count, 1));
     out.write((char *) edges.data(), LENGTH(Edge, edges_count));
+
+    size_t edges_ch_count = edges_ch.size();
+    out.write((char *) &edges_ch_count, LENGTH(edges_ch_count, 1));
+    out.write((char *) edges_ch.data(), LENGTH(EdgeCH, edges_ch_count));
 }
 
 void Graph::output_geojson(const char * filename) {
     std::ofstream out(filename, std::ios_base::binary);
-    output_geojson(out);
+    output_geojsonCH(out);
 }
 
 
@@ -393,6 +410,21 @@ void Graph::output_geojson(std::ostream& out) {
     geojson_output::outputPathsEnd(out);
 }
 
+void Graph::output_geojsonCH(std::ostream& out) {
+    geojson_output::outputPathsStart(out);
+    bool first = true;
+    for(size_t i = 0; i < nodes.size() - 1; i++) {
+        if(!first) out << ",";
+        first = false;
+        geojson_output::outputFeaturePoint(out, nodes_ch[i].position);
+        for(size_t j = nodes_ch[i].edge_offset; j < nodes_ch[i+1].edge_offset; j++) {
+            out << ",";
+            geojson_output::outputLine(out, nodes_ch[i].position, nodes_ch[edges_ch[j].dest].position);
+        }
+    }
+    geojson_output::outputPathsEnd(out);
+}
+
 size_t Graph::getNearestNode(const ClipperLib::IntPoint& x) {
     size_t currentBest = 0;
     size_t currentBestDistance = SIZE_MAX;
@@ -407,4 +439,28 @@ size_t Graph::getNearestNode(const ClipperLib::IntPoint& x) {
         }
     }
     return currentBest;
+}
+
+PathData findPath(Graph* graph, float x1, float y1, float x2, float y2, int algorithm) {
+    ClipperLib::IntPoint a{toInt(x1), toInt(y1)};
+    ClipperLib::IntPoint b{toInt(x2), toInt(y2)};
+    PathData p;
+    auto start = std::chrono::high_resolution_clock::now();
+    switch (algorithm) {
+        case ALGORITHM_DIJKSTRA:
+            p = graph->getPathDijkstra(a, b);
+            break;
+        case ALGORITHM_A_STAR:
+            p = graph->getPathAStar(a, b);
+            break;
+        case ALGORITHM_CH_DIJSKTRA:
+            p = graph->getPathCHDijkstra(a, b);
+            break;
+        default:
+            throw std::runtime_error("Unknown Algorithm");
+    }
+    auto stop = std::chrono::high_resolution_clock::now();
+    p.duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+    p.distance = calculate_distance(a, b);
+    return p;
 }

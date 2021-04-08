@@ -41,6 +41,15 @@ void getStatsOnPolygons(char * input, char * output_s) {
     }
 }
 
+void findPath(char* filename, float x1, float y1, float x2, float y2, int algorithm) {
+    Graph graph(filename);
+    PathData p = findPath(&graph, x1, y1, x2, y2, algorithm);
+    std::cout << "Path Length: " << p.length << std::endl;
+    std::cout << "Distance over air: " << p.distance << std::endl;
+    std::cout << "Heap Accesses: " << p.heap_accesses << std::endl;
+    std::cout << "Time taken: " << p.duration << std::endl;
+}
+
 /**
  * Run graph creation for a given polygon file
  */
@@ -72,6 +81,14 @@ int main(int argc, char ** argv) {
         CHECK_PARAMETER("Expected: input, node_count", 2);
         size_t node_count = atoll(argv[3]);
         testGraphCreation(argv[2], node_count);
+    } else if(task == "findPath") {
+        CHECK_PARAMETER("Expected: input, x1, y1, x2, y2, algorithm", 6);
+        float x1 = atof(argv[3]);
+        float y1 = atof(argv[4]);
+        float x2 = atof(argv[5]);
+        float y2 = atof(argv[6]);
+        int algorithm = atoi(argv[7]);
+        findPath(argv[2], x1, y1, x2, y2, algorithm);
     } else {
         std::cerr << "Unknown task: " << task << std::endl;
     }

@@ -66,6 +66,7 @@ def generateGraph():
         graphFile = os.path.join(DATA_DIR, source, GRAPH_DATA.format(size))
         graph = backend.Graph(sourceFile, size)
         graph.output(graphFile)
+        app.logger.info("Done writing graph.")
         if size <= 1000:
             geojsonFile = os.path.join(DATA_DIR, source, GRAPH_GEOJSON.format(size))
             graph.output_geojson(geojsonFile)

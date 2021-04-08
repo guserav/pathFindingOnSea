@@ -13,7 +13,8 @@ SRC = \
       src/checks.cpp \
       src/graph.cpp \
       src/dijkstra.cpp \
-      src/A_star.cpp
+      src/A_star.cpp \
+      src/ch_dijkstra.cpp
 
 SRC_LIBS = \
      3rd_party/clipper/clipper.cpp

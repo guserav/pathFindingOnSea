@@ -1,7 +1,6 @@
 #include <Python.h>
 #include "osmium_import.hpp"
 #include "output.hpp"
-#include <chrono>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -9,9 +8,6 @@
 #include "import_paths.hpp"
 #include "helper.hpp"
 #include "output_geojson.hpp"
-
-#define ALGORITHM_DIJKSTRA 1
-#define ALGORITHM_A_STAR 2
 
 #define MODULE_NAME "backend"
 #define START_FUNC try {
@@ -116,23 +112,8 @@ PyObject * pyGraphPath(PyObject *pself, PyObject *args) {
     }
     START_FUNC;
     auto self = reinterpret_cast<PyGraph *>(pself);
-    ClipperLib::IntPoint a{toInt(x1), toInt(y1)};
-    ClipperLib::IntPoint b{toInt(x2), toInt(y2)};
-    float distance = calculate_distance(a, b);
-    PathData p;
-    auto start = std::chrono::high_resolution_clock::now();
-    switch (algorithm) {
-        case ALGORITHM_DIJKSTRA:
-            p = self->graph->getPathDijkstra(a, b);
-            break;
-        case ALGORITHM_A_STAR:
-            p = self->graph->getPathAStar(a, b);
-            break;
-        default:
-            throw std::runtime_error("Unknown Algorithm");
-    }
-    auto stop = std::chrono::high_resolution_clock::now();
-    long long duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+
+    PathData p = findPath(self->graph, x1, y1, x2, y2, algorithm);
 
     std::stringstream out(std::ios_base::out);
     geojson_output::outputPathsStart(out);
@@ -169,7 +150,7 @@ PyObject * pyGraphPath(PyObject *pself, PyObject *args) {
     }
     Py_DECREF(length);
 
-    PyObject * time_taken = PyLong_FromSize_t(duration);
+    PyObject * time_taken = PyLong_FromSize_t(p.duration);
     ALLOC_CHECK(time_taken);
     if(PyDict_SetItemString(dict, "time_taken", time_taken) < 0) {
         Py_DECREF(time_taken);
@@ -187,7 +168,7 @@ PyObject * pyGraphPath(PyObject *pself, PyObject *args) {
     }
     Py_DECREF(heap_accesses);
 
-    PyObject * pyDistance = PyFloat_FromDouble(distance);
+    PyObject * pyDistance = PyFloat_FromDouble(p.distance);
     ALLOC_CHECK(pyDistance);
     if(PyDict_SetItemString(dict, "distance", pyDistance) < 0) {
         Py_DECREF(pyDistance);
@@ -306,10 +287,16 @@ PyObject* getAlgorithmTuple() {
         Py_DecRef(dijkstra);
         return NULL;
     }
-    PyObject* tuple = Py_BuildValue("(NN)", dijkstra, a_star);
+    PyObject* ch_dijsktra = Py_BuildValue("(is)", ALGORITHM_CH_DIJSKTRA, "CH_DIJKSTRA");
+    if(NULL == a_star) {
+        Py_DecRef(ch_dijsktra);
+        return NULL;
+    }
+    PyObject* tuple = Py_BuildValue("(NNN)", dijkstra, a_star, ch_dijsktra);
     if(NULL == tuple) {
         Py_DecRef(dijkstra);
         Py_DecRef(a_star);
+        Py_DecRef(ch_dijsktra);
         return NULL;
     }
     return tuple;
