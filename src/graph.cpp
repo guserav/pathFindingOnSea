@@ -97,17 +97,18 @@ void Graph::generateCH() {
     struct TmpEdge {
         size_t length;
         size_t destination;
-        size_t hop_node; //find edge in tmpEdges
+        size_t hop_node; //find edge in tmpFinalEdges
         size_t edge_index1, edge_index2;
     };
-    std::vector<std::vector<TmpEdge>> tmpEdges(N);
+    std::vector<std::vector<TmpEdge>> tmpRemainingEdges(N);
+    std::vector<std::vector<TmpEdge>> tmpFinalEdges(N);
     for(size_t i = 0; i < N; i++) {
         nodes_ch[i].position = nodes[i].position;
         const size_t edges_start = nodes[i].edge_offset;
         const size_t edges_stop = nodes[i + 1].edge_offset;
         const size_t edge_count = edges_stop - edges_start;
         if (edge_count) {
-            auto& curEdges = tmpEdges[i];
+            auto& curEdges = tmpRemainingEdges[i];
             curEdges.resize(edge_count);
             for(int j = 0; j < edge_count; j++) {
                 Edge& origEdge = edges[edges_start + j];
@@ -125,14 +126,32 @@ void Graph::generateCH() {
     size_t remainingNodes = N;
     size_t currentPriority = 1;  // priority 0 marks nodes not yet removed
     for(size_t i = 0; i < nodes_ch.size() - 1; i++) {
-        if(tmpEdges[i].size() < 2) { // No point in expanding nodes with only 1 connected node
+        if(tmpRemainingEdges[i].size() + tmpFinalEdges[i].size() < 2) { // No point in expanding nodes with only 1 connected node
             remainingNodes--;
             nodes_ch[i].priority = currentPriority;
+            if(tmpRemainingEdges[i].size() > 0) {
+                auto& ownRemainingEdges = tmpRemainingEdges[i];
+                auto& ownFinalEdges = tmpRemainingEdges[i];
+                ownFinalEdges.push_back(ownRemainingEdges.front());
+                ownRemainingEdges.clear();
+                const auto& edge = ownFinalEdges.front();
+                auto& neighbourRemainingEdges = tmpRemainingEdges[edge.destination];
+                auto& neighbourFinalEdges = tmpFinalEdges[edge.destination];
+                for(size_t j = 0; j < neighbourRemainingEdges.size(); j++) {
+                    const auto& otherEdge = neighbourRemainingEdges[j];
+                    if(otherEdge.destination == i) {
+                        neighbourFinalEdges.push_back(otherEdge);
+                        neighbourRemainingEdges.erase(neighbourRemainingEdges.begin() + j);
+                        break; // There are no duplicate edges
+                    }
+                }
+            }
         } else if(!nodes[i].onWater){
             // This property allows us to just mark them as priority 1 and don't think about them later on
             throw std::runtime_error("All None water nodes should have no edges");
         }
     }
+    std::vector<size_t> edges_to_remove; // vector holding indexes of edges to remove from the current neighbour
     while(remainingNodes) {
         std::cerr << remainingNodes << "                   \r";
         std::vector<bool> visitedIndependece(N, false);
@@ -142,8 +161,8 @@ void Graph::generateCH() {
         for(size_t i = 0; i < N; i++) {
             if(nodes_ch[i].priority == 0) {
                 long edge_count = 0;
-                for(size_t j = 0; j < tmpEdges[i].size(); j++) {
-                    if(0 == nodes_ch[tmpEdges[i][j].destination].priority) {
+                for(size_t j = 0; j < tmpRemainingEdges[i].size(); j++) {
+                    if(0 == nodes_ch[tmpRemainingEdges[i][j].destination].priority) {
                         edge_count++;
                     }
                 }
@@ -162,7 +181,7 @@ void Graph::generateCH() {
             if(!visitedIndependece[index]) {
                 // Node is marked by not marking at as true
                 currentSetSize++;
-                for(auto& e : tmpEdges[index]) {
+                for(auto& e : tmpRemainingEdges[index]) {
                     visitedIndependece[e.destination] = true;
                     // No need to check if the destination is part of the graph as this will be done later anyway
                 }
@@ -172,8 +191,8 @@ void Graph::generateCH() {
             auto& curNode = nodes_ch[i];
             if(!visitedIndependece[i] && curNode.priority == 0) {
                 size_t neighbourCount = 0;
-                for(size_t j = 0; j < tmpEdges[i].size(); j++) {
-                    if(0 == nodes_ch[tmpEdges[i][j].destination].priority) {
+                for(size_t j = 0; j < tmpRemainingEdges[i].size(); j++) {
+                    if(0 == nodes_ch[tmpRemainingEdges[i][j].destination].priority) {
                         neighbourCount++;
                     }
                 }
@@ -181,8 +200,8 @@ void Graph::generateCH() {
                     size_t index;
                 } neighbours[neighbourCount];
                 size_t cNeighbour = 0;
-                for(size_t j = 0; j < tmpEdges[i].size(); j++) {
-                    size_t other = tmpEdges[i][j].destination;
+                for(size_t j = 0; j < tmpRemainingEdges[i].size(); j++) {
+                    size_t other = tmpRemainingEdges[i][j].destination;
                     if(0 == nodes_ch[other].priority) {
                         bool found = false;
                         for(size_t k = 0; k < cNeighbour; k++) {
@@ -199,8 +218,13 @@ void Graph::generateCH() {
                     }
                 }
                 assert(neighbourCount == cNeighbour);
+                auto& currentFinalEdges = tmpFinalEdges[i];
+                auto& currentRemainingEdges = tmpRemainingEdges[i];
+                const size_t edgeCountPreviouslyInFinal = currentFinalEdges.size();
+                currentFinalEdges.insert(currentFinalEdges.end(), currentRemainingEdges.begin(), currentRemainingEdges.end());
                 // TODO maybe do an qsort on the neighbours based of the index for faster finding later
                 for(size_t j = 0; j < neighbourCount; j++) {
+                    edges_to_remove.clear();
                     size_t currentNeighbour = neighbours[j].index;
                     struct {
                         size_t currentLength = SIZE_MAX;
@@ -210,12 +234,15 @@ void Graph::generateCH() {
                         size_t e2_i = SIZE_MAX;
                     } dijkstraData[neighbourCount];
                     assert(dijkstraData[0].currentLength == SIZE_MAX);
-                    for(size_t e1_i = 0; e1_i < tmpEdges[currentNeighbour].size(); e1_i++) {
-                        const auto& edge1 = tmpEdges[currentNeighbour][e1_i];
+                    for(size_t e1_i = 0; e1_i < tmpRemainingEdges[currentNeighbour].size(); e1_i++) {
+                        const auto& edge1 = tmpRemainingEdges[currentNeighbour][e1_i];
                         const bool overThisNode = (edge1.destination == i);
+                        if(overThisNode) {
+                            edges_to_remove.push_back(e1_i);
+                        }
                         if(0 == nodes_ch[edge1.destination].priority) {
-                            for(size_t e2_i = 0; e2_i < tmpEdges[edge1.destination].size(); e2_i++) {
-                                const auto& edge2 = tmpEdges[edge1.destination][e2_i];
+                            for(size_t e2_i = 0; e2_i < tmpRemainingEdges[edge1.destination].size(); e2_i++) {
+                                const auto& edge2 = tmpRemainingEdges[edge1.destination][e2_i];
                                 if(0 == nodes_ch[edge2.destination].priority) {
                                     const size_t length = edge1.length + edge2.length;
                                     size_t n = 0;
@@ -261,27 +288,37 @@ void Graph::generateCH() {
                             }
                         }
                     }
+                    const size_t from = neighbours[j].index;
+                    auto& finalEdgesOfNeighbour = tmpFinalEdges[from];
+                    auto& remainingEdgesOfNeighbour = tmpRemainingEdges[from];
                     for(size_t k = 0; k < neighbourCount; k++) {
                         if(k != j && dijkstraData[k].overThisNode && true/*TODO!dijkstraData[k].alternative*/) {
-                            const size_t from = neighbours[j].index;
                             const size_t to = neighbours[k].index;
-                            auto& edgesOfNeighbour = tmpEdges[from];
-                            assert(dijkstraData[k].e1_i < edgesOfNeighbour.size());
-                            assert(dijkstraData[k].e2_i < tmpEdges[i].size());
+                            assert(dijkstraData[k].e1_i < remainingEdgesOfNeighbour.size());
+                            assert(dijkstraData[k].e2_i < currentRemainingEdges.size());
                             assert(from != to);
                             // Only required to add the one edge as the other direction is done from the other neighbour
                             TmpEdge newEdge = {
                                 .length = dijkstraData[k].currentLength,
                                 .destination = to,
                                 .hop_node = i,
-                                .edge_index1 = dijkstraData[k].e1_i,
-                                .edge_index2 = dijkstraData[k].e2_i
+                                .edge_index1 = finalEdgesOfNeighbour.size(),
+                                .edge_index2 = dijkstraData[k].e2_i + edgeCountPreviouslyInFinal
                             };
-                            edgesOfNeighbour.push_back(newEdge);
+
+                            remainingEdgesOfNeighbour.push_back(newEdge);
+                            finalEdgesOfNeighbour.push_back(remainingEdgesOfNeighbour[dijkstraData[k].e1_i]);
+                            assert(newEdge.edge_index1 < finalEdgesOfNeighbour.size());
+                            assert(newEdge.edge_index2 < currentFinalEdges.size());
                         }
+                    }
+                    for(long k = edges_to_remove.size() - 1; k >= 0; k--) {
+                        assert(k < remainingEdgesOfNeighbour.size());
+                        remainingEdgesOfNeighbour.erase(remainingEdgesOfNeighbour.begin() + k);
                     }
                 }
                 // Remove node from current Graph
+                currentRemainingEdges.clear();
                 curNode.priority = currentPriority;
                 remainingNodes--;
             }
@@ -289,14 +326,17 @@ void Graph::generateCH() {
     }
     std::cerr << "\nDone contraction: " << std::endl;
     size_t edgeCount = 0;
-    for(const auto& edges : tmpEdges) {
+    for(const auto& edges : tmpFinalEdges) {
         edgeCount += edges.size();
+    }
+    for(const auto& edges : tmpRemainingEdges) {
+        assert(0 == edges.size());
     }
 
     edges_ch.reserve(edgeCount);
     for(size_t i = 0; i < N; i++) {
         nodes_ch[i].edge_offset = edges_ch.size();
-        for(const auto& e : tmpEdges[i]) {
+        for(const auto& e : tmpFinalEdges[i]) {
             EdgeCH newEdge = {
                 .dest = e.destination,
                 .length = e.length,
@@ -308,8 +348,8 @@ void Graph::generateCH() {
         }
     }
     for(size_t i = 0; i < N; i++) {
-        for(size_t j = 0; j < tmpEdges[i].size(); j++) {
-            const auto& tmpE = tmpEdges[i][j];
+        for(size_t j = 0; j < tmpFinalEdges[i].size(); j++) {
+            const auto& tmpE = tmpFinalEdges[i][j];
             auto& e = edges_ch[j + nodes_ch[i].edge_offset];
             e.p1 = tmpE.edge_index1 + nodes_ch[i].edge_offset;
             e.p2 = tmpE.edge_index2 + nodes_ch[tmpE.hop_node].edge_offset;
