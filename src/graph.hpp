@@ -43,6 +43,8 @@ struct PathData {
 };
 using PathData = struct PathData;
 
+ClipperLib::IntPoint getRandomPoint();
+
 class Graph {
     public:
         Graph(OutlineHolder& outline_holder, size_t N);
@@ -55,9 +57,9 @@ class Graph {
         size_t getIndex(size_t x, size_t y);
         static size_t distance(const Node& a, const Node& b);
         size_t getNearestNode(const ClipperLib::IntPoint& x);
-        PathData getPathDijkstra(const ClipperLib::IntPoint& from, const ClipperLib::IntPoint& to);
-        PathData getPathCHDijkstra(const ClipperLib::IntPoint& from, const ClipperLib::IntPoint& to);
-        PathData getPathAStar(const ClipperLib::IntPoint& from, const ClipperLib::IntPoint& to);
+        PathData getPathDijkstra(size_t from, size_t to);
+        PathData getPathCHDijkstra(size_t from, size_t to);
+        PathData getPathAStar(size_t from, size_t to);
 
     private:
         void generateGraph(OutlineHolder& outline_holder, size_t N);

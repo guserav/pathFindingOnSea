@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
+#include <chrono>
 #include "stdlib.h"
 #include "stdio.h"
 #include "osmium_import.hpp"
@@ -65,8 +66,76 @@ void testGraphCreation(char * filename, size_t node_count) {
     }
 }
 
-void benchmark(char * filename, size_t n) {
+void benchmark(char * filename, size_t n, size_t warmup) {
+    Graph g(filename);
+    struct {
+        size_t from;
+        size_t to;
+    } queries[n];
+    srand(time(0));
+    for(auto& q : queries) {
+        ClipperLib::IntPoint p1 = getRandomPoint();
+        ClipperLib::IntPoint p2 = getRandomPoint();
+        q.from = g.getNearestNode(p1);
+        q.to = g.getNearestNode(p2);
+    }
+    uint8_t algorithms[] = {ALGORITHM_DIJKSTRA, ALGORITHM_A_STAR, ALGORITHM_CH_DIJSKTRA};
+    struct {
+        long long timeTaken;
+        size_t length;
+    } results[n - warmup][4];
+    for(uint8_t algorithm : algorithms) {
+        size_t skip = warmup;
+        size_t current = 0;
+        for(auto& q : queries) {
+            if(skip > 0) {
+                skip--;
+                continue;
+            }
+            auto start = std::chrono::high_resolution_clock::now();
+            PathData p;
+            switch (algorithm) {
+                case ALGORITHM_DIJKSTRA:
+                    p = g.getPathDijkstra(q.from, q.to);
+                    break;
+                case ALGORITHM_A_STAR:
+                    p = g.getPathAStar(q.from, q.to);
+                    break;
+                case ALGORITHM_CH_DIJSKTRA:
+                    p = g.getPathCHDijkstra(q.from, q.to);
+                    break;
+                default:
+                    throw std::runtime_error("Unknown Algorithm");
+            }
+            auto stop = std::chrono::high_resolution_clock::now();
+            long long duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+            results[current++][algorithm] = {.timeTaken = duration, .length = p.length};
+        }
+    }
+    long long timeSum[4] = {0};
+    long long squaredTimeSum[4] = {0};
+    for(size_t i = 0; i < n - warmup; i++) {
+        size_t length = results[i][algorithms[0]].length;
+        for(auto algorithm:algorithms) {
+            if(length != results[i][algorithm].length) {
+                std::cerr << "Algorithms reported different length of path" << std::endl;
+                std::cout << i << ": " << queries[i + warmup].from << "," << queries[i + warmup].to << ": " << results[i][1].length << "," << results[i][2].length << "," << results[i][3].length << std::endl;
+                return;
+            }
+            timeSum[algorithm] += results[i][algorithm].timeTaken;
+            timeSum[algorithm] += results[i][algorithm].timeTaken * results[i][algorithm].timeTaken;
+        }
+    }
 
+    long long avgTime[4] = {0};
+    long long varianz[4] = {0};
+    for(auto algorithm:algorithms) {
+        avgTime[algorithm] = timeSum[algorithm] / (n - warmup);
+        varianz[algorithm] = squaredTimeSum[algorithm] / (n - warmup) - avgTime[algorithm];
+    }
+    std::cout << "Dijkstra average Time   : " << avgTime[ALGORITHM_DIJKSTRA] << std::endl;
+    std::cout << "A* average Time         : " << avgTime[ALGORITHM_A_STAR] << std::endl;
+    std::cout << "CH Dijkstra average Time: " << avgTime[ALGORITHM_CH_DIJSKTRA] << std::endl;
 }
 
 #define CHECK_PARAMETER(s, e) \
@@ -94,9 +163,14 @@ int main(int argc, char ** argv) {
         int algorithm = atoi(argv[7]);
         findPath(argv[2], x1, y1, x2, y2, algorithm);
     } else if(task == "benchmark") {
-        CHECK_PARAMETER("Expected: input, n", 2);
+        CHECK_PARAMETER("Expected: input, n, warmup", 3);
         int n = atoi(argv[3]);
-        benchmark(argv[2], n);
+        int warmup = atoi(argv[4]);
+        if(warmup >= n) {
+            std::cerr << "warmup has a nonsense value compare to n" << std::endl;
+            return 1;
+        }
+        benchmark(argv[2], n, warmup);
     } else {
         std::cerr << "Unknown task: " << task << std::endl;
     }

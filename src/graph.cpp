@@ -19,6 +19,16 @@ const ClipperLib::IntRect world_boundary = {
     .bottom = toInt(AREABOUND_SOUTH)
 };
 
+ClipperLib::IntPoint getRandomPoint() {
+    float x = rand() / (RAND_MAX * 1.);
+    x *= AREABOUND_EAST - AREABOUND_WEST;
+    x += AREABOUND_WEST;
+    float y = rand() / (RAND_MAX * 1.);
+    y *= AREABOUND_NORTH - AREABOUND_SOUTH;
+    y += AREABOUND_SOUTH;
+    return {toInt(x), toInt(y)};
+}
+
 /*
  * Scale N to a square to determine how many points to actually place
  */
@@ -506,8 +516,10 @@ size_t Graph::getNearestNode(const ClipperLib::IntPoint& x) {
 }
 
 PathData findPath(Graph* graph, float x1, float y1, float x2, float y2, int algorithm) {
-    ClipperLib::IntPoint a{toInt(x1), toInt(y1)};
-    ClipperLib::IntPoint b{toInt(x2), toInt(y2)};
+    ClipperLib::IntPoint a_i{toInt(x1), toInt(y1)};
+    ClipperLib::IntPoint b_i{toInt(x2), toInt(y2)};
+    const size_t a = graph->getNearestNode(a_i);
+    const size_t b = graph->getNearestNode(b_i);
     PathData p;
     auto start = std::chrono::high_resolution_clock::now();
     switch (algorithm) {

@@ -17,10 +17,8 @@ bool compareDijkstra(const HeapElemDijkstra& a, const HeapElemDijkstra& b) {
     return a.distanceHere > b.distanceHere;
 }
 
-PathData Graph::getPathDijkstra(const ClipperLib::IntPoint& from, const ClipperLib::IntPoint& to) {
+PathData Graph::getPathDijkstra(size_t fromIndex, size_t toIndex) {
     PathData ret{.heap_accesses = 0, .length = 0};
-    size_t fromIndex = getNearestNode(from);
-    size_t toIndex = getNearestNode(to);
 
     std::vector<NodeDijkstraData> dijkstraData(nodes.size(), {.distanceHere = SIZE_MAX, .prev = 0});
     std::vector<HeapElemDijkstra> dijkstraHeap;

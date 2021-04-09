@@ -18,10 +18,8 @@ bool compareAStar(const HeapElemAStar& a, const HeapElemAStar& b) {
     return a.sortValue > b.sortValue;
 }
 
-PathData Graph::getPathAStar(const ClipperLib::IntPoint& from, const ClipperLib::IntPoint& to) {
+PathData Graph::getPathAStar(size_t fromIndex, size_t toIndex) {
     PathData ret{.heap_accesses = 0, .length = 0};
-    size_t fromIndex = getNearestNode(from);
-    size_t toIndex = getNearestNode(to);
     Node toNode = nodes[toIndex];
 
     std::vector<NodeAStarData> astarData(nodes.size(), {.distanceHere = SIZE_MAX, .prev = 0});

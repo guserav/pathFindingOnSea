@@ -43,10 +43,8 @@ void addPath(const std::vector<Node>& nodes, const std::vector<EdgeCH>& edges_ch
     }
 }
 
-PathData Graph::getPathCHDijkstra(const ClipperLib::IntPoint& from, const ClipperLib::IntPoint& to) {
+PathData Graph::getPathCHDijkstra(size_t fromIndex, size_t toIndex) {
     PathData ret{.heap_accesses = 0, .length = 0};
-    const size_t fromIndex = getNearestNode(from);
-    const size_t toIndex = getNearestNode(to);
 
     std::vector<NodeCHDijkstraData> dijkstraData(nodes_ch.size(), {
             .distanceHere = {SIZE_MAX, SIZE_MAX},
