@@ -63,6 +63,10 @@ Generating a graph needs a couple of steps.
 3. On the generate graph page you can then choose the generated outlines file and proceed with generating a graph with ~#number nodes of your choosing. For a start I would recommend 1000
 4. After finishing you are taken to the map and can start clicking on it to see if the path finding works.
     - Note: for node counts <= 1000 a geojson is generated that can be shown if wanted.
+5. Run benchmark
+```
+build/a.out benchmark data/planet-coastlines/graph-1000000.bin 1000 10
+```
 
 ## Libraries used
 ### Clipper

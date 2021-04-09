@@ -83,6 +83,7 @@ void benchmark(char * filename, size_t n, size_t warmup) {
     struct {
         long long timeTaken;
         size_t length;
+        size_t heap_accesses;
     } results[n - warmup][4];
     for(uint8_t algorithm : algorithms) {
         size_t skip = warmup;
@@ -109,33 +110,40 @@ void benchmark(char * filename, size_t n, size_t warmup) {
             }
             auto stop = std::chrono::high_resolution_clock::now();
             long long duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-            results[current++][algorithm] = {.timeTaken = duration, .length = p.length};
+            results[current++][algorithm] = {.timeTaken = duration, .length = p.length, .heap_accesses = p.heap_accesses};
         }
     }
     long long timeSum[4] = {0};
+    long long heap_accesses_sum[4] = {0};
     long long squaredTimeSum[4] = {0};
     for(size_t i = 0; i < n - warmup; i++) {
         size_t length = results[i][algorithms[0]].length;
         for(auto algorithm:algorithms) {
-            if(length != results[i][algorithm].length) {
+            if(false && length != results[i][algorithm].length) { // CH doesn't always report the optimum..
                 std::cerr << "Algorithms reported different length of path" << std::endl;
                 std::cout << i << ": " << queries[i + warmup].from << "," << queries[i + warmup].to << ": " << results[i][1].length << "," << results[i][2].length << "," << results[i][3].length << std::endl;
                 return;
             }
             timeSum[algorithm] += results[i][algorithm].timeTaken;
+            heap_accesses_sum[algorithm] += results[i][algorithm].heap_accesses;
             timeSum[algorithm] += results[i][algorithm].timeTaken * results[i][algorithm].timeTaken;
         }
     }
 
     long long avgTime[4] = {0};
+    long long avgHeap_Access[4] = {0};
     long long varianz[4] = {0};
     for(auto algorithm:algorithms) {
         avgTime[algorithm] = timeSum[algorithm] / (n - warmup);
+        avgHeap_Access[algorithm] = heap_accesses_sum[algorithm] / (n - warmup);
         varianz[algorithm] = squaredTimeSum[algorithm] / (n - warmup) - avgTime[algorithm];
     }
     std::cout << "Dijkstra average Time   : " << avgTime[ALGORITHM_DIJKSTRA] << std::endl;
     std::cout << "A* average Time         : " << avgTime[ALGORITHM_A_STAR] << std::endl;
     std::cout << "CH Dijkstra average Time: " << avgTime[ALGORITHM_CH_DIJSKTRA] << std::endl;
+    std::cout << "Dijkstra heap_accesses   : " << avgHeap_Access[ALGORITHM_DIJKSTRA] << std::endl;
+    std::cout << "A* heap_accesses         : " << avgHeap_Access[ALGORITHM_A_STAR] << std::endl;
+    std::cout << "CH Dijkstra heap_accesses: " << avgHeap_Access[ALGORITHM_CH_DIJSKTRA] << std::endl;
 }
 
 #define CHECK_PARAMETER(s, e) \

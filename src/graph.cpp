@@ -42,7 +42,7 @@ Graph::Graph(OutlineHolder& outline_holder, size_t N) {
 }
 
 void Graph::generateGraph(OutlineHolder& outline_holder, size_t N) {
-    pointsInX = std::sqrt(pointsForSquare(N));
+    pointsInX = std::sqrt(N);
     pointsInY = N / pointsInX;
     N = pointsInX * pointsInY;
     float distanceX = (AREABOUND_EAST - AREABOUND_WEST) / pointsInX;
