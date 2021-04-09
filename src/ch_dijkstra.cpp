@@ -62,12 +62,11 @@ PathData Graph::getPathCHDijkstra(size_t fromIndex, size_t toIndex) {
     size_t currentBest = SIZE_MAX;
     size_t currentBestIndex = SIZE_MAX;
 
-    std::pop_heap(dijkstraHeap.begin(), dijkstraHeap.end(), &compareCHDijkstra);
     while(dijkstraHeap.size()) {
         ret.heap_accesses++;
+        std::pop_heap(dijkstraHeap.begin(), dijkstraHeap.end(), &compareCHDijkstra);
         HeapElemCHDijkstra current = dijkstraHeap.back();
         dijkstraHeap.pop_back();
-        std::pop_heap(dijkstraHeap.begin(), dijkstraHeap.end(), &compareCHDijkstra);
 
 
         NodeCHDijkstraData& node = dijkstraData[current.node];
@@ -75,13 +74,13 @@ PathData Graph::getPathCHDijkstra(size_t fromIndex, size_t toIndex) {
             node.distanceHere[current.from] = current.distanceHere;
             node.prev[current.from] = current.prev;
             node.prevEdge[current.from] = current.prevEdge;
-            if(node.prev[0] != SIZE_MAX && node.prev[1] != SIZE_MAX /* TODO */) {
+            if(node.prev[0] != SIZE_MAX && node.prev[1] != SIZE_MAX) {
                 const size_t sum = node.distanceHere[0] + node.distanceHere[1];
                 if(sum < currentBest) {
                     currentBest = sum;
                     currentBestIndex = current.node;
                 }
-                if(dijkstraHeap.size() > 0 && currentBest < dijkstraHeap.back().distanceHere) { // This breaking condition is inspired from https://i11www.iti.kit.edu/_media/teaching/theses/da-columbus-12.pdf Odly enough I was required to flip the comparison to get a correct lenght. But it seems to terminate in an awfull time (No time to fix it)
+                if(currentBest < current.distanceHere) { // This breaking condition is inspired from https://i11www.iti.kit.edu/_media/teaching/theses/da-columbus-12.pdf Odly enough I was required to flip the comparison to get a correct lenght. But it seems to terminate in an awfull time (No time to fix it)
                     break;
                 }
             }
@@ -101,7 +100,7 @@ PathData Graph::getPathCHDijkstra(size_t fromIndex, size_t toIndex) {
     }
 
     if(currentBestIndex != SIZE_MAX) {
-        ret.length = dijkstraData[currentBestIndex].distanceHere[0] + dijkstraData[currentBestIndex].distanceHere[1] ;
+        ret.length = currentBest;
         ClipperLib::Path p1, p2;
         addPath(nodes, edges_ch, dijkstraData, currentBestIndex, p1, fromIndex, 0);
         if(SIZE_MAX != dijkstraData[currentBestIndex].prevEdge[1]) {

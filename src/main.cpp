@@ -119,7 +119,7 @@ void benchmark(char * filename, size_t n, size_t warmup) {
     for(size_t i = 0; i < n - warmup; i++) {
         size_t length = results[i][algorithms[0]].length;
         for(auto algorithm:algorithms) {
-            if(false && length != results[i][algorithm].length) { // CH doesn't always report the optimum..
+            if(length > 2 && (length < results[i][algorithm].length - 2 || length > results[i][algorithm].length + 2)) { // Off by one errors when running CH_DIJKSTRA
                 std::cerr << "Algorithms reported different length of path" << std::endl;
                 std::cout << i << ": " << queries[i + warmup].from << "," << queries[i + warmup].to << ": " << results[i][1].length << "," << results[i][2].length << "," << results[i][3].length << std::endl;
                 return;
