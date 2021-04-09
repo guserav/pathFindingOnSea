@@ -117,11 +117,13 @@ PyObject * pyGraphPath(PyObject *pself, PyObject *args) {
 
     std::stringstream out(std::ios_base::out);
     geojson_output::outputPathsStart(out);
-    if(p.path.size() > 1) {
-        geojson_output::outputLine(out, p.path[0], p.path[1]);
-        for(size_t i = 2; i < p.path.size(); i ++) {
+    if(p.path.size() > 0) {
+        geojson_output::outputFeaturePoint(out, p.path[0]);
+        for(size_t i = 1; i < p.path.size(); i ++) {
             out << ",";
             geojson_output::outputLine(out, p.path[i - 1], p.path[i]);
+            out << ",";
+            geojson_output::outputFeaturePoint(out, p.path[i]);
         }
     }
     geojson_output::outputPathsEnd(out);

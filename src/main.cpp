@@ -65,6 +65,10 @@ void testGraphCreation(char * filename, size_t node_count) {
     }
 }
 
+void benchmark(char * filename, size_t n) {
+
+}
+
 #define CHECK_PARAMETER(s, e) \
     if(argc < e + 2) { \
         std::cerr << "Missing parameters" << s << std::endl; \
@@ -89,6 +93,10 @@ int main(int argc, char ** argv) {
         float y2 = atof(argv[6]);
         int algorithm = atoi(argv[7]);
         findPath(argv[2], x1, y1, x2, y2, algorithm);
+    } else if(task == "benchmark") {
+        CHECK_PARAMETER("Expected: input, n", 2);
+        int n = atoi(argv[3]);
+        benchmark(argv[2], n);
     } else {
         std::cerr << "Unknown task: " << task << std::endl;
     }
