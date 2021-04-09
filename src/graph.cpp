@@ -130,8 +130,9 @@ void Graph::generateCH() {
             remainingNodes--;
             nodes_ch[i].priority = currentPriority;
             if(tmpRemainingEdges[i].size() > 0) {
+                assert(1 == tmpRemainingEdges[i].size());
                 auto& ownRemainingEdges = tmpRemainingEdges[i];
-                auto& ownFinalEdges = tmpRemainingEdges[i];
+                auto& ownFinalEdges = tmpFinalEdges[i];
                 ownFinalEdges.push_back(ownRemainingEdges.front());
                 ownRemainingEdges.clear();
                 const auto& edge = ownFinalEdges.front();
@@ -142,7 +143,7 @@ void Graph::generateCH() {
                     if(otherEdge.destination == i) {
                         neighbourFinalEdges.push_back(otherEdge);
                         neighbourRemainingEdges.erase(neighbourRemainingEdges.begin() + j);
-                        break; // There are no duplicate edges
+                        j--;
                     }
                 }
             }
@@ -162,9 +163,8 @@ void Graph::generateCH() {
             if(nodes_ch[i].priority == 0) {
                 long edge_count = 0;
                 for(size_t j = 0; j < tmpRemainingEdges[i].size(); j++) {
-                    if(0 == nodes_ch[tmpRemainingEdges[i][j].destination].priority) {
-                        edge_count++;
-                    }
+                    assert(0 == nodes_ch[tmpRemainingEdges[i][j].destination].priority);
+                    edge_count++;
                 }
                 indexesForED[curIndexInEDVector++] = {
                     .index = i,
@@ -192,9 +192,8 @@ void Graph::generateCH() {
             if(!visitedIndependece[i] && curNode.priority == 0) {
                 size_t neighbourCount = 0;
                 for(size_t j = 0; j < tmpRemainingEdges[i].size(); j++) {
-                    if(0 == nodes_ch[tmpRemainingEdges[i][j].destination].priority) {
-                        neighbourCount++;
-                    }
+                    assert(0 == nodes_ch[tmpRemainingEdges[i][j].destination].priority);
+                    neighbourCount++;
                 }
                 struct {
                     size_t index;
@@ -202,19 +201,17 @@ void Graph::generateCH() {
                 size_t cNeighbour = 0;
                 for(size_t j = 0; j < tmpRemainingEdges[i].size(); j++) {
                     size_t other = tmpRemainingEdges[i][j].destination;
-                    if(0 == nodes_ch[other].priority) {
-                        bool found = false;
-                        for(size_t k = 0; k < cNeighbour; k++) {
-                            if(neighbours[k].index == other) {
-                                found = true;
-                                break;
-                            }
+                    bool found = false;
+                    for(size_t k = 0; k < cNeighbour; k++) {
+                        if(neighbours[k].index == other) {
+                            found = true;
+                            break;
                         }
-                        if(!found) {
-                            neighbours[cNeighbour++] = {.index = other};
-                        } else {
-                            neighbourCount--;
-                        }
+                    }
+                    if(!found) {
+                        neighbours[cNeighbour++] = {.index = other};
+                    } else {
+                        neighbourCount--;
                     }
                 }
                 assert(neighbourCount == cNeighbour);
@@ -223,6 +220,12 @@ void Graph::generateCH() {
                 const size_t edgeCountPreviouslyInFinal = currentFinalEdges.size();
                 currentFinalEdges.insert(currentFinalEdges.end(), currentRemainingEdges.begin(), currentRemainingEdges.end());
                 // TODO maybe do an qsort on the neighbours based of the index for faster finding later
+                size_t totalNumberOfEdgesAdded =0;
+                struct DebugEdge {
+                    size_t from;
+                    size_t to;
+                };
+                std::vector<DebugEdge> edges_between_neighbours;
                 for(size_t j = 0; j < neighbourCount; j++) {
                     edges_to_remove.clear();
                     size_t currentNeighbour = neighbours[j].index;
@@ -236,55 +239,53 @@ void Graph::generateCH() {
                     assert(dijkstraData[0].currentLength == SIZE_MAX);
                     for(size_t e1_i = 0; e1_i < tmpRemainingEdges[currentNeighbour].size(); e1_i++) {
                         const auto& edge1 = tmpRemainingEdges[currentNeighbour][e1_i];
+                        if(edge1.hop_node == i) continue; // We can't use shortcut edges that we added
                         const bool overThisNode = (edge1.destination == i);
                         if(overThisNode) {
                             edges_to_remove.push_back(e1_i);
                         }
-                        if(0 == nodes_ch[edge1.destination].priority) {
-                            for(size_t e2_i = 0; e2_i < tmpRemainingEdges[edge1.destination].size(); e2_i++) {
-                                const auto& edge2 = tmpRemainingEdges[edge1.destination][e2_i];
-                                if(0 == nodes_ch[edge2.destination].priority) {
-                                    const size_t length = edge1.length + edge2.length;
-                                    size_t n = 0;
-                                    for(; n < neighbourCount; n++) {
-                                        if(neighbours[n].index == edge2.destination) {
-                                            break;
-                                        }
-                                    }
-                                    if(n != neighbourCount) {
-                                        if(length < dijkstraData[n].currentLength) {
-                                            dijkstraData[n].currentLength = length;
-                                            dijkstraData[n].alternative = false;
-                                            dijkstraData[n].overThisNode = overThisNode;
-                                            if(overThisNode) {
-                                                dijkstraData[n].e1_i = e1_i;
-                                                dijkstraData[n].e2_i = e2_i;
-                                            }
-                                        } else if(dijkstraData[n].currentLength == length) {
-                                            dijkstraData[n].alternative = true;
-                                            if(overThisNode) {
-                                                dijkstraData[n].overThisNode = true;
-                                                dijkstraData[n].e1_i = e1_i;
-                                                dijkstraData[n].e2_i = e2_i;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                        for(size_t e2_i = 0; e2_i < tmpRemainingEdges[edge1.destination].size(); e2_i++) {
+                            const auto& edge2 = tmpRemainingEdges[edge1.destination][e2_i];
+                            if(edge2.hop_node == i) continue; // We can't use shortcut edges that we added
+                            const size_t length = edge1.length + edge2.length;
                             size_t n = 0;
                             for(; n < neighbourCount; n++) {
-                                if(neighbours[n].index == edge1.destination) {
+                                if(neighbours[n].index == edge2.destination) {
                                     break;
                                 }
                             }
                             if(n != neighbourCount) {
-                                if(edge1.length <= dijkstraData[n].currentLength) {
-                                    dijkstraData[n].currentLength = edge1.length;
-                                    dijkstraData[n].alternative = false; // Technically not correct for == case but functionally the same
-                                    dijkstraData[n].overThisNode = false;
-                                    dijkstraData[n].e1_i = SIZE_MAX;
-                                    dijkstraData[n].e2_i = SIZE_MAX;
+                                if(length < dijkstraData[n].currentLength) {
+                                    dijkstraData[n].currentLength = length;
+                                    dijkstraData[n].alternative = false;
+                                    dijkstraData[n].overThisNode = overThisNode;
+                                    if(overThisNode) {
+                                        dijkstraData[n].e1_i = e1_i;
+                                        dijkstraData[n].e2_i = e2_i;
+                                    }
+                                } else if(dijkstraData[n].currentLength == length) {
+                                    dijkstraData[n].alternative = true;
+                                    if(overThisNode) {
+                                        dijkstraData[n].overThisNode = true;
+                                        dijkstraData[n].e1_i = e1_i;
+                                        dijkstraData[n].e2_i = e2_i;
+                                    }
                                 }
+                            }
+                        }
+                        size_t n = 0;
+                        for(; n < neighbourCount; n++) {
+                            if(neighbours[n].index == edge1.destination) {
+                                break;
+                            }
+                        }
+                        if(n != neighbourCount) {
+                            if(edge1.length <= dijkstraData[n].currentLength) {
+                                dijkstraData[n].currentLength = edge1.length;
+                                dijkstraData[n].alternative = true; // Technically not correct for < case but functionally the same
+                                dijkstraData[n].overThisNode = false;
+                                dijkstraData[n].e1_i = SIZE_MAX;
+                                dijkstraData[n].e2_i = SIZE_MAX;
                             }
                         }
                     }
@@ -292,7 +293,7 @@ void Graph::generateCH() {
                     auto& finalEdgesOfNeighbour = tmpFinalEdges[from];
                     auto& remainingEdgesOfNeighbour = tmpRemainingEdges[from];
                     for(size_t k = 0; k < neighbourCount; k++) {
-                        if(k != j && dijkstraData[k].overThisNode && true/*TODO!dijkstraData[k].alternative*/) {
+                        if(k != j && dijkstraData[k].overThisNode && !dijkstraData[k].alternative) {
                             const size_t to = neighbours[k].index;
                             assert(dijkstraData[k].e1_i < remainingEdgesOfNeighbour.size());
                             assert(dijkstraData[k].e2_i < currentRemainingEdges.size());
@@ -306,16 +307,33 @@ void Graph::generateCH() {
                                 .edge_index2 = dijkstraData[k].e2_i + edgeCountPreviouslyInFinal
                             };
 
+                            edges_between_neighbours.push_back({from, to});
                             remainingEdgesOfNeighbour.push_back(newEdge);
+                            totalNumberOfEdgesAdded++;
                             finalEdgesOfNeighbour.push_back(remainingEdgesOfNeighbour[dijkstraData[k].e1_i]);
                             assert(newEdge.edge_index1 < finalEdgesOfNeighbour.size());
                             assert(newEdge.edge_index2 < currentFinalEdges.size());
                         }
                     }
                     for(long k = edges_to_remove.size() - 1; k >= 0; k--) {
-                        assert(k < remainingEdgesOfNeighbour.size());
-                        remainingEdgesOfNeighbour.erase(remainingEdgesOfNeighbour.begin() + k);
+                        assert(edges_to_remove[k] < remainingEdgesOfNeighbour.size());
+                        assert(i == remainingEdgesOfNeighbour[edges_to_remove[k]].destination);
+                        remainingEdgesOfNeighbour.erase(remainingEdgesOfNeighbour.begin() + edges_to_remove[k]);
                     }
+                }
+                assert(totalNumberOfEdgesAdded == edges_between_neighbours.size());
+                for(auto& e1 : edges_between_neighbours) {
+                    bool found = false;
+                    for(auto& e2 : edges_between_neighbours) {
+                        if(e1.from == e2.to && e1.to == e2.from) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    assert(found);
+                }
+                if(totalNumberOfEdgesAdded % 2) {
+                    assert(0);
                 }
                 // Remove node from current Graph
                 currentRemainingEdges.clear();
