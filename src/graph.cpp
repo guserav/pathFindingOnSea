@@ -272,14 +272,14 @@ void Graph::generateCH() {
                                     dijkstraData[n].alternative = false;
                                     dijkstraData[n].overThisNode = overThisNode;
                                     if(overThisNode) {
-                                        dijkstraData[n].e1_i = e1_i;
+                                        dijkstraData[n].e1_i = edges_to_remove.size();
                                         dijkstraData[n].e2_i = e2_i;
                                     }
                                 } else if(dijkstraData[n].currentLength == length) {
                                     dijkstraData[n].alternative = true;
                                     if(overThisNode) {
                                         dijkstraData[n].overThisNode = true;
-                                        dijkstraData[n].e1_i = e1_i;
+                                        dijkstraData[n].e1_i = edges_to_remove.size();
                                         dijkstraData[n].e2_i = e2_i;
                                     }
                                 }
@@ -307,7 +307,7 @@ void Graph::generateCH() {
                     for(size_t k = 0; k < neighbourCount; k++) {
                         if(k != j && dijkstraData[k].overThisNode && true/*TODO!dijkstraData[k].alternative*/) {
                             const size_t to = neighbours[k].index;
-                            assert(dijkstraData[k].e1_i < remainingEdgesOfNeighbour.size());
+                            assert(dijkstraData[k].e1_i <= edges_to_remove.size());
                             assert(dijkstraData[k].e2_i < currentRemainingEdges.size());
                             assert(from != to);
                             assert(to != i);
@@ -317,21 +317,23 @@ void Graph::generateCH() {
                                 .length = dijkstraData[k].currentLength,
                                 .destination = to,
                                 .hop_node = i,
-                                .edge_index1 = finalEdgesOfNeighbour.size(),
+                                .edge_index1 = finalEdgesOfNeighbour.size() + edges_to_remove.size() - dijkstraData[k].e1_i,
                                 .edge_index2 = dijkstraData[k].e2_i + edgeCountPreviouslyInFinal
                             };
 
                             ONLY_DEBUG(edges_between_neighbours.push_back({from, to});)
                             remainingEdgesOfNeighbour.push_back(newEdge);
                             ONLY_DEBUG(totalNumberOfEdgesAdded++;)
-                            finalEdgesOfNeighbour.push_back(remainingEdgesOfNeighbour[dijkstraData[k].e1_i]);
-                            assert(newEdge.edge_index1 < finalEdgesOfNeighbour.size());
+                            //finalEdgesOfNeighbour.push_back(remainingEdgesOfNeighbour[dijkstraData[k].e1_i]);
+                            assert(newEdge.edge_index1 < finalEdgesOfNeighbour.size() + edges_to_remove.size());
                             assert(newEdge.edge_index2 < currentFinalEdges.size());
                         }
                     }
                     for(long k = edges_to_remove.size() - 1; k >= 0; k--) {
                         assert(edges_to_remove[k] < remainingEdgesOfNeighbour.size());
                         assert(i == remainingEdgesOfNeighbour[edges_to_remove[k]].destination);
+                        assert(i != remainingEdgesOfNeighbour[edges_to_remove[k]].hop_node);
+                        finalEdgesOfNeighbour.push_back(remainingEdgesOfNeighbour[edges_to_remove[k]]);
                         remainingEdgesOfNeighbour.erase(remainingEdgesOfNeighbour.begin() + edges_to_remove[k]);
                     }
                     ONLY_DEBUG(
