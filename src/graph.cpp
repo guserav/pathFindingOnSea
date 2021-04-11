@@ -305,7 +305,7 @@ void Graph::generateCH() {
                     auto& finalEdgesOfNeighbour = tmpFinalEdges[from];
                     auto& remainingEdgesOfNeighbour = tmpRemainingEdges[from];
                     for(size_t k = 0; k < neighbourCount; k++) {
-                        if(k != j && dijkstraData[k].overThisNode && true/*TODO!dijkstraData[k].alternative*/) {
+                        if(k != j && dijkstraData[k].overThisNode && !dijkstraData[k].alternative) {
                             const size_t to = neighbours[k].index;
                             assert(dijkstraData[k].e1_i <= edges_to_remove.size());
                             assert(dijkstraData[k].e2_i < currentRemainingEdges.size());
