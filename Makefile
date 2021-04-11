@@ -43,7 +43,7 @@ LIBS_PYTHON= $(LIBS_BASE) python3
 
 DEBUG?=0
 ifeq ($(DEBUG), 0)
-	CXX_FLAGS += -O3
+	CXX_FLAGS += -O3 -DNDEBUG
 	BUILD_DIR = $(BASE_BUILD_DIR)/release
 else
 	CXX_FLAGS += -O0 -g3
