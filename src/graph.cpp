@@ -230,12 +230,14 @@ void Graph::generateCH() {
                 const size_t edgeCountPreviouslyInFinal = currentFinalEdges.size();
                 currentFinalEdges.insert(currentFinalEdges.end(), currentRemainingEdges.begin(), currentRemainingEdges.end());
                 // TODO maybe do an qsort on the neighbours based of the index for faster finding later
-                //size_t totalNumberOfEdgesAdded =0;
-                /*struct DebugEdge {
-                    size_t from;
-                    size_t to;
-                };
-                std::vector<DebugEdge> edges_between_neighbours;*/
+                ONLY_DEBUG(
+                    size_t totalNumberOfEdgesAdded =0;
+                    struct DebugEdge {
+                        size_t from;
+                        size_t to;
+                    };
+                    std::vector<DebugEdge> edges_between_neighbours;
+                )
                 for(size_t j = 0; j < neighbourCount; j++) {
                     edges_to_remove.clear();
                     size_t currentNeighbour = neighbours[j].index;
@@ -308,6 +310,8 @@ void Graph::generateCH() {
                             assert(dijkstraData[k].e1_i < remainingEdgesOfNeighbour.size());
                             assert(dijkstraData[k].e2_i < currentRemainingEdges.size());
                             assert(from != to);
+                            assert(to != i);
+                            assert(from != i);
                             // Only required to add the one edge as the other direction is done from the other neighbour
                             TmpEdge newEdge = {
                                 .length = dijkstraData[k].currentLength,
@@ -317,9 +321,9 @@ void Graph::generateCH() {
                                 .edge_index2 = dijkstraData[k].e2_i + edgeCountPreviouslyInFinal
                             };
 
-                            //edges_between_neighbours.push_back({from, to});
+                            ONLY_DEBUG(edges_between_neighbours.push_back({from, to});)
                             remainingEdgesOfNeighbour.push_back(newEdge);
-                            //totalNumberOfEdgesAdded++;
+                            ONLY_DEBUG(totalNumberOfEdgesAdded++;)
                             finalEdgesOfNeighbour.push_back(remainingEdgesOfNeighbour[dijkstraData[k].e1_i]);
                             assert(newEdge.edge_index1 < finalEdgesOfNeighbour.size());
                             assert(newEdge.edge_index2 < currentFinalEdges.size());
@@ -330,21 +334,32 @@ void Graph::generateCH() {
                         assert(i == remainingEdgesOfNeighbour[edges_to_remove[k]].destination);
                         remainingEdgesOfNeighbour.erase(remainingEdgesOfNeighbour.begin() + edges_to_remove[k]);
                     }
-                }
-                /*assert(totalNumberOfEdgesAdded == edges_between_neighbours.size());
-                for(auto& e1 : edges_between_neighbours) {
-                    bool found = false;
-                    for(auto& e2 : edges_between_neighbours) {
-                        if(e1.from == e2.to && e1.to == e2.from) {
-                            found = true;
-                            break;
+                    ONLY_DEBUG(
+                        for(long k = remainingEdgesOfNeighbour.size() - 1; k >= 0; k--) {
+                            if(i == remainingEdgesOfNeighbour[k].destination) {
+                                remainingEdgesOfNeighbour.erase(remainingEdgesOfNeighbour.begin() + k);
+                                k--;
+                                assert(0);
+                            }
                         }
-                    }
-                    assert(found);
+                    )
                 }
-                if(totalNumberOfEdgesAdded % 2) {
-                    assert(0);
-                }*/
+                ONLY_DEBUG(
+                    assert(totalNumberOfEdgesAdded == edges_between_neighbours.size());
+                    for(auto& e1 : edges_between_neighbours) {
+                        bool found = false;
+                        for(auto& e2 : edges_between_neighbours) {
+                            if(e1.from == e2.to && e1.to == e2.from) {
+                                found = true;
+                                break;
+                            }
+                        }
+                        assert(found);
+                    }
+                    if(totalNumberOfEdgesAdded % 2) {
+                        assert(0);
+                    }
+                )
                 // Remove node from current Graph
                 currentRemainingEdges.clear();
                 curNode.priority = currentPriority;

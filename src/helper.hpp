@@ -8,6 +8,12 @@
 #define toString(x) (x / PRECISION)
 #define LENGTH(T, l) (sizeof(T) * (l))
 
+#ifndef NDEBUG
+    #define ONLY_DEBUG(x)
+#else
+    #define ONLY_DEBUG(x) x
+#endif
+
 
 template<typename T>
 inline ClipperLib::cInt toInt(T x) {
