@@ -187,7 +187,7 @@ void Graph::generateCH() {
         assert(curIndexInEDVector == remainingNodes);
         qsort(indexesForED.data(), remainingNodes, sizeof(indexesForED[0]), compareEDStruct);
         size_t currentSetSize = 0;
-        for(size_t i = 0; i < remainingNodes; i++) {
+        for(size_t i = 0; i <= remainingNodes / 2; i++) {
             const size_t index = indexesForED[i].index;
             if(!visitedIndependece[index]) {
                 // Node is marked by not marking at as true
@@ -197,6 +197,11 @@ void Graph::generateCH() {
                     // No need to check if the destination is part of the graph as this will be done later anyway
                 }
             }
+        }
+        // Only build independent set in lower half of ED nodes to avoid working on nodes with a huge amount of neighbours for as long as possible
+        for(size_t i = 1 + remainingNodes / 2; i < remainingNodes; i++) {
+            const size_t index = indexesForED[i].index;
+            visitedIndependece[index] = true;
         }
         for(size_t i = 0; i < N; i++) {
             auto& curNode = nodes_ch[i];
