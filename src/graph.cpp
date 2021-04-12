@@ -164,7 +164,6 @@ void Graph::generateCH() {
     }
     std::vector<size_t> edges_to_remove; // vector holding indexes of edges to remove from the current neighbour
     while(remainingNodes) {
-        std::cerr << remainingNodes << "                   \r";
         std::vector<bool> visitedIndependece(N, false);
         currentPriority++;
         std::vector<EDStruct> indexesForED(remainingNodes);
@@ -366,6 +365,7 @@ void Graph::generateCH() {
                 currentRemainingEdges.clear();
                 curNode.priority = currentPriority;
                 remainingNodes--;
+                std::cerr << remainingNodes << "                   " << neighbourCount << "                   \r";
             }
         }
     }
