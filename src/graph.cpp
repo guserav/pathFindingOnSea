@@ -249,7 +249,7 @@ void Graph::generateCH() {
                     size_t currentNeighbour = currentRemainingEdges[j].destination;
                     struct {
                         size_t currentLength = SIZE_MAX;
-                        bool alternative = false;
+                        size_t edge_here = SIZE_MAX; // Stores the edge to get directly from j to neighbour k
                         bool overThisNode = false;
                         size_t e1_i = SIZE_MAX;
                     } dijkstraData[currentRemainingEdges.size()];
@@ -266,24 +266,15 @@ void Graph::generateCH() {
                                 const size_t length = edge1.length + edge2.length;
                                 if(length < dijkstraData[n].currentLength) {
                                     dijkstraData[n].currentLength = length;
-                                    dijkstraData[n].alternative = false;
-                                    dijkstraData[n].overThisNode = overThisNode;
-                                    if(overThisNode) {
-                                        dijkstraData[n].e1_i = edges_to_remove.size();
-                                    }
-                                } else if(dijkstraData[n].currentLength == length) {
-                                    dijkstraData[n].alternative = true;
-                                    if(overThisNode) {
-                                        dijkstraData[n].overThisNode = true;
-                                        dijkstraData[n].e1_i = edges_to_remove.size();
-                                    }
+                                    dijkstraData[n].overThisNode = true;
+                                    dijkstraData[n].e1_i = edges_to_remove.size();
                                 }
                             }
                         } else if(neighbourMap[edge1.destination] < SIZE_MAX) {
                             const size_t n = neighbourMap[edge1.destination];
+                            dijkstraData[n].edge_here = e1_i - edges_to_remove.size(); // We need to take edges that are deleted into account
                             if(edge1.length <= dijkstraData[n].currentLength) {
                                 dijkstraData[n].currentLength = edge1.length;
-                                dijkstraData[n].alternative = true; // Technically not correct for < case but functionally the same
                                 dijkstraData[n].overThisNode = false;
                                 dijkstraData[n].e1_i = SIZE_MAX;
                             }
@@ -293,7 +284,7 @@ void Graph::generateCH() {
                     auto& finalEdgesOfNeighbour = tmpFinalEdges[from];
                     auto& remainingEdgesOfNeighbour = tmpRemainingEdges[from];
                     for(size_t k = 0; k < currentRemainingEdges.size(); k++) {
-                        if(k != j && dijkstraData[k].overThisNode && !dijkstraData[k].alternative) {
+                        if(k != j && dijkstraData[k].overThisNode) {
                             const size_t to = currentRemainingEdges[k].destination;
                             assert(dijkstraData[k].e1_i <= edges_to_remove.size());
                             assert(from != to);
@@ -304,7 +295,7 @@ void Graph::generateCH() {
                                 .length = dijkstraData[k].currentLength,
                                 .from = from,
                                 .destination = to,
-                                .hop_node = i,
+                                .hop_node = dijkstraData[k].edge_here, // misuse hop_node for now to store the edge to replace by adding this edge
                                 .edge_index1 = finalEdgesOfNeighbour.size() + edges_to_remove.size() - dijkstraData[k].e1_i,
                                 .edge_index2 = k + edgeCountPreviouslyInFinal
                             };
@@ -336,24 +327,14 @@ void Graph::generateCH() {
                 for(size_t j = 0; j < currentRemainingEdges.size(); j++) {
                     neighbourMap[currentRemainingEdges[j].destination] = SIZE_MAX;
                 }
-                for(const auto& newEdge : edges_to_add) {
-                    size_t count = 0;
+                for(auto& newEdge : edges_to_add) {
                     auto& remainingEdgesOfNeighbour = tmpRemainingEdges[newEdge.from];
-                    for(size_t n = 0; n < remainingEdgesOfNeighbour.size(); n++) {
-                        if(remainingEdgesOfNeighbour[n].destination == newEdge.destination) {
-                            assert(newEdge.length != remainingEdgesOfNeighbour[n].length);
-                            if(newEdge.length < remainingEdgesOfNeighbour[n].length) {
-                                remainingEdgesOfNeighbour[n].length = newEdge.length;
-                                remainingEdgesOfNeighbour[n].destination = newEdge.destination;
-                                remainingEdgesOfNeighbour[n].hop_node = newEdge.hop_node;
-                                remainingEdgesOfNeighbour[n].edge_index1 = newEdge.edge_index1;
-                                remainingEdgesOfNeighbour[n].edge_index2 = newEdge.edge_index2;
-                                count++;
-                                assert(1 == count);
-                            }
-                        }
-                    }
-                    if(0 == count) {
+                    if(newEdge.hop_node < SIZE_MAX) {
+                        assert(newEdge.destination == remainingEdgesOfNeighbour[newEdge.hop_node].destination);
+                        remainingEdgesOfNeighbour[newEdge.hop_node] = newEdge;
+                        remainingEdgesOfNeighbour[newEdge.hop_node].hop_node = i;
+                    } else {
+                        newEdge.hop_node = i;
                         remainingEdgesOfNeighbour.push_back(newEdge);
                     }
                 }
