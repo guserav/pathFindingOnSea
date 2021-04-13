@@ -133,6 +133,7 @@ void Graph::generateCH() {
             }
         }
     }
+    std::vector<size_t> neighbourMap(N, SIZE_MAX);
 
     size_t remainingNodes = N;
     size_t currentPriority = 1;  // priority 0 marks nodes not yet removed
@@ -205,6 +206,7 @@ void Graph::generateCH() {
         }
         for(size_t i = 0; i < N; i++) {
             auto& curNode = nodes_ch[i];
+            assert(SIZE_MAX == neighbourMap[i]);
             if(!visitedIndependece[i] && curNode.priority == 0) {
                 auto& currentFinalEdges = tmpFinalEdges[i];
                 auto& currentRemainingEdges = tmpRemainingEdges[i];
@@ -240,6 +242,9 @@ void Graph::generateCH() {
                     std::vector<DebugEdge> edges_between_neighbours;
                 )
                 for(size_t j = 0; j < currentRemainingEdges.size(); j++) {
+                    neighbourMap[currentRemainingEdges[j].destination] = j;
+                }
+                for(size_t j = 0; j < currentRemainingEdges.size(); j++) {
                     edges_to_remove.clear();
                     size_t currentNeighbour = currentRemainingEdges[j].destination;
                     struct {
@@ -274,14 +279,8 @@ void Graph::generateCH() {
                                     }
                                 }
                             }
-                        }
-                        size_t n = 0;
-                        for(; n < currentRemainingEdges.size(); n++) {
-                            if(currentRemainingEdges[n].destination == edge1.destination) {
-                                break;
-                            }
-                        }
-                        if(n != currentRemainingEdges.size()) {
+                        } else if(neighbourMap[edge1.destination] < SIZE_MAX) {
+                            const size_t n = neighbourMap[edge1.destination];
                             if(edge1.length <= dijkstraData[n].currentLength) {
                                 dijkstraData[n].currentLength = edge1.length;
                                 dijkstraData[n].alternative = true; // Technically not correct for < case but functionally the same
@@ -333,6 +332,9 @@ void Graph::generateCH() {
                             }
                         }
                     )
+                }
+                for(size_t j = 0; j < currentRemainingEdges.size(); j++) {
+                    neighbourMap[currentRemainingEdges[j].destination] = SIZE_MAX;
                 }
                 for(const auto& newEdge : edges_to_add) {
                     size_t count = 0;
