@@ -375,10 +375,10 @@ void Graph::generateCH() {
                     }
                 )
                 // Remove node from current Graph
-                currentRemainingEdges.clear();
                 curNode.priority = currentPriority;
                 remainingNodes--;
                 std::cerr << remainingNodes << "                   " << currentRemainingEdges.size() << "                   \r";
+                currentRemainingEdges.clear();
             }
         }
     }
