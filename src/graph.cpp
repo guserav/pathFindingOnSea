@@ -206,39 +206,30 @@ void Graph::generateCH() {
         for(size_t i = 0; i < N; i++) {
             auto& curNode = nodes_ch[i];
             if(!visitedIndependece[i] && curNode.priority == 0) {
+                auto& currentFinalEdges = tmpFinalEdges[i];
+                auto& currentRemainingEdges = tmpRemainingEdges[i];
+                const size_t edgeCountPreviouslyInFinal = currentFinalEdges.size();
+                currentFinalEdges.insert(currentFinalEdges.end(), currentRemainingEdges.begin(), currentRemainingEdges.end());
                 edges_to_add.clear();
-                size_t neighbourCount = 0;
-                for(size_t j = 0; j < tmpRemainingEdges[i].size(); j++) {
-                    assert(0 == nodes_ch[tmpRemainingEdges[i][j].destination].priority);
-                    neighbourCount++;
-                }
-                struct {
-                    size_t index;
-                    size_t edge_index;
-                } neighbours[neighbourCount];
-                size_t cNeighbour = 0;
-                for(size_t j = 0; j < tmpRemainingEdges[i].size(); j++) {
-                    size_t other = tmpRemainingEdges[i][j].destination;
-                    ONLY_DEBUG(
+                ONLY_DEBUG(
+                    size_t neighbourCount = 0;
+                    for(size_t j = 0; j < tmpRemainingEdges[i].size(); j++) {
+                        assert(0 == nodes_ch[tmpRemainingEdges[i][j].destination].priority);
+                        neighbourCount++;
+                    }
+                    assert(neighbourCount == currentRemainingEdges.size());
+                    for(size_t j = 0; j < currentRemainingEdges.size(); j++) {
+                        size_t other = currentRemainingEdges[j].destination;
                         bool found = false;
-                        for(size_t k = 0; k < cNeighbour; k++) {
-                            if(neighbours[k].index == other) {
+                        for(size_t k = 0; k < j; k++) {
+                            if(currentRemainingEdges[k].destination == other) {
                                 found = true;
                                 break;
                             }
                         }
                         assert(!found);
-                    )
-                    neighbours[cNeighbour++] = {
-                        .index = other,
-                        .edge_index = j,
-                    };
-                }
-                assert(neighbourCount == cNeighbour);
-                auto& currentFinalEdges = tmpFinalEdges[i];
-                auto& currentRemainingEdges = tmpRemainingEdges[i];
-                const size_t edgeCountPreviouslyInFinal = currentFinalEdges.size();
-                currentFinalEdges.insert(currentFinalEdges.end(), currentRemainingEdges.begin(), currentRemainingEdges.end());
+                    }
+                )
                 // TODO maybe do an qsort on the neighbours based of the index for faster finding later
                 ONLY_DEBUG(
                     size_t totalNumberOfEdgesAdded =0;
@@ -248,15 +239,15 @@ void Graph::generateCH() {
                     };
                     std::vector<DebugEdge> edges_between_neighbours;
                 )
-                for(size_t j = 0; j < neighbourCount; j++) {
+                for(size_t j = 0; j < currentRemainingEdges.size(); j++) {
                     edges_to_remove.clear();
-                    size_t currentNeighbour = neighbours[j].index;
+                    size_t currentNeighbour = currentRemainingEdges[j].destination;
                     struct {
                         size_t currentLength = SIZE_MAX;
                         bool alternative = false;
                         bool overThisNode = false;
                         size_t e1_i = SIZE_MAX;
-                    } dijkstraData[neighbourCount];
+                    } dijkstraData[currentRemainingEdges.size()];
                     assert(dijkstraData[0].currentLength == SIZE_MAX);
                     for(size_t e1_i = 0; e1_i < tmpRemainingEdges[currentNeighbour].size(); e1_i++) {
                         const auto& edge1 = tmpRemainingEdges[currentNeighbour][e1_i];
@@ -264,8 +255,8 @@ void Graph::generateCH() {
                         const bool overThisNode = (edge1.destination == i);
                         if(overThisNode) {
                             edges_to_remove.push_back(e1_i);
-                            for(size_t n = 0; n < neighbourCount; n++) {
-                                const auto& edge2 = tmpRemainingEdges[i][neighbours[n].edge_index];
+                            for(size_t n = 0; n < currentRemainingEdges.size(); n++) {
+                                const auto& edge2 = currentRemainingEdges[n];
                                 if(edge2.hop_node == i) continue; // We can't use shortcut edges that we added
                                 const size_t length = edge1.length + edge2.length;
                                 if(length < dijkstraData[n].currentLength) {
@@ -285,12 +276,12 @@ void Graph::generateCH() {
                             }
                         }
                         size_t n = 0;
-                        for(; n < neighbourCount; n++) {
-                            if(neighbours[n].index == edge1.destination) {
+                        for(; n < currentRemainingEdges.size(); n++) {
+                            if(currentRemainingEdges[n].destination == edge1.destination) {
                                 break;
                             }
                         }
-                        if(n != neighbourCount) {
+                        if(n != currentRemainingEdges.size()) {
                             if(edge1.length <= dijkstraData[n].currentLength) {
                                 dijkstraData[n].currentLength = edge1.length;
                                 dijkstraData[n].alternative = true; // Technically not correct for < case but functionally the same
@@ -299,14 +290,13 @@ void Graph::generateCH() {
                             }
                         }
                     }
-                    const size_t from = neighbours[j].index;
+                    const size_t from = currentRemainingEdges[j].destination;
                     auto& finalEdgesOfNeighbour = tmpFinalEdges[from];
                     auto& remainingEdgesOfNeighbour = tmpRemainingEdges[from];
-                    for(size_t k = 0; k < neighbourCount; k++) {
+                    for(size_t k = 0; k < currentRemainingEdges.size(); k++) {
                         if(k != j && dijkstraData[k].overThisNode && !dijkstraData[k].alternative) {
-                            const size_t to = neighbours[k].index;
+                            const size_t to = currentRemainingEdges[k].destination;
                             assert(dijkstraData[k].e1_i <= edges_to_remove.size());
-                            assert(neighbours[k].edge_index < currentRemainingEdges.size());
                             assert(from != to);
                             assert(to != i);
                             assert(from != i);
@@ -317,7 +307,7 @@ void Graph::generateCH() {
                                 .destination = to,
                                 .hop_node = i,
                                 .edge_index1 = finalEdgesOfNeighbour.size() + edges_to_remove.size() - dijkstraData[k].e1_i,
-                                .edge_index2 = neighbours[k].edge_index + edgeCountPreviouslyInFinal
+                                .edge_index2 = k + edgeCountPreviouslyInFinal
                             };
                             edges_to_add.push_back(newEdge);
                             ONLY_DEBUG(edges_between_neighbours.push_back({from, to});)
@@ -386,7 +376,7 @@ void Graph::generateCH() {
                 currentRemainingEdges.clear();
                 curNode.priority = currentPriority;
                 remainingNodes--;
-                std::cerr << remainingNodes << "                   " << neighbourCount << "                   \r";
+                std::cerr << remainingNodes << "                   " << currentRemainingEdges.size() << "                   \r";
             }
         }
     }
