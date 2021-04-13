@@ -8,7 +8,7 @@
 #define toString(x) (x / PRECISION)
 #define LENGTH(T, l) (sizeof(T) * (l))
 
-#ifndef NDEBUG
+#ifdef NDEBUG
     #define ONLY_DEBUG(x)
 #else
     #define ONLY_DEBUG(x) x
