@@ -13,6 +13,7 @@ using NodeCHDijkstraData = struct NodeCHDijkstraData;
 
 struct HeapElemCHDijkstra {
     size_t distanceHere;
+    size_t sortValue;
     size_t prev;
     size_t prevEdge; // Edge in previous graph used
     size_t node;
@@ -21,7 +22,7 @@ struct HeapElemCHDijkstra {
 using HeapElemCHDijkstra = struct HeapElemCHDijkstra;
 
 bool compareCHDijkstra(const HeapElemCHDijkstra& a, const HeapElemCHDijkstra& b) {
-    return a.distanceHere > b.distanceHere;
+    return a.sortValue > b.sortValue;
 }
 
 void addEdge(const std::vector<Node>& nodes, const std::vector<EdgeCH>& edges_ch, const EdgeCH& edge, ClipperLib::Path& p) {
@@ -80,19 +81,30 @@ PathData Graph::getPathCHDijkstra(size_t fromIndex, size_t toIndex) {
                     currentBest = sum;
                     currentBestIndex = current.node;
                 }
-                if(currentBest < current.distanceHere) { // This breaking condition is inspired from https://i11www.iti.kit.edu/_media/teaching/theses/da-columbus-12.pdf Odly enough I was required to flip the comparison to get a correct lenght. But it seems to terminate in an awfull time (No time to fix it)
+                if(currentBest < current.sortValue) { // This breaking condition is inspired from https://i11www.iti.kit.edu/_media/teaching/theses/da-columbus-12.pdf Odly enough I was required to flip the comparison to get a correct lenght. But it seems to terminate in an awfull time (No time to fix it)
                     break;
                 }
             }
+            size_t currentToNode = fromIndex;
+            if(DISCOVERED_FROM == current.from) {
+                currentToNode = toIndex;
+            }
 
-            for(size_t i = nodes_ch[current.node].edge_offset; i < nodes_ch[current.node + 1].edge_offset; i++) {
+            for(long i = nodes_ch[current.node + 1].edge_offset - 1; i >= nodes_ch[current.node].edge_offset; i--) {
                 const EdgeCH& edge = edges_ch[i];
                 size_t dist = current.distanceHere + edge.length;
                 const NodeCHDijkstraData& otherNode = dijkstraData[edge.dest];
 
                 bool correctDirection = nodes_ch[current.node].priority < nodes_ch[edge.dest].priority;
+                if(!correctDirection) break; // Edges are sorted in first block of lower priority then higher
                 if(correctDirection && dist < otherNode.distanceHere[current.from]) {
-                    dijkstraHeap.push_back({.distanceHere = dist, .prev = current.node, .prevEdge = i, .node = edge.dest, .from = current.from});
+                    dijkstraHeap.push_back({
+                            .distanceHere = dist,
+                            .sortValue = dist + distance(nodes[edge.dest], nodes[currentToNode]),
+                            .prev = current.node,
+                            .prevEdge = i,
+                            .node = edge.dest,
+                            .from = current.from});
                     std::push_heap(dijkstraHeap.begin(), dijkstraHeap.end(), &compareCHDijkstra);
                 }
             }
