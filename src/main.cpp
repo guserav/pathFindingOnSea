@@ -89,10 +89,6 @@ void benchmark(char * filename, size_t n, size_t warmup) {
         size_t skip = warmup;
         size_t current = 0;
         for(auto& q : queries) {
-            if(skip > 0) {
-                skip--;
-                continue;
-            }
             auto start = std::chrono::high_resolution_clock::now();
             PathData p;
             switch (algorithm) {
@@ -110,6 +106,10 @@ void benchmark(char * filename, size_t n, size_t warmup) {
             }
             auto stop = std::chrono::high_resolution_clock::now();
             long long duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+            if(skip > 0) {
+                skip--;
+                continue;
+            }
             results[current++][algorithm] = {.timeTaken = duration, .length = p.length, .heap_accesses = p.heap_accesses};
         }
     }
