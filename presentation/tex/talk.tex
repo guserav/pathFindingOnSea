@@ -1,0 +1,57 @@
+\documentclass[compress,11pt]{beamer}
+
+% language and encodings
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{listings}
+\definecolor{commentgreen}{RGB}{50,200,50}
+\lstdefinestyle{cpp}{
+  language=C++,
+  basicstyle=\small\ttfamily,
+  frame=tb,
+  xleftmargin=\parindent,
+  keywordstyle=\color{blue},
+  stringstyle=\color{red},
+  commentstyle=\color{commentgreen},
+  morecomment=[l][\color{magenta}]{\#},
+  framexleftmargin=5pt,
+  framexrightmargin=5pt,
+  framextopmargin=5pt,
+  framexbottommargin=5pt,
+  literate={~}{$\sim$}1
+}
+
+% TikZ
+\usepackage{tikz}
+
+
+% metadata
+\title{Fachpraktikum OSM}
+\author{Erik Zeiske}
+\institute{University of Stuttgart}
+\date{Apr 26, 2021}
+
+\newcommand{\bild}[4]{
+  \begin{figure}[htbp]
+    \begin{center}
+      \includegraphics{#1}
+      \caption[#4]{#3}
+      \label{#2}
+    \end{center}
+  \end{figure}
+}
+
+\newcommand{\bildbreite}[5]{
+  \begin{figure}[htbp]
+    \begin{center}
+      \includegraphics[width=#2]{#1}
+      \caption[#5]{#4}
+      \label{#3}
+    \end{center}
+  \end{figure}
+}
+
+\begin{document}
+    \include{slides}
+\end{document}
