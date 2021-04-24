@@ -1,5 +1,6 @@
 \documentclass[compress,11pt]{beamer}
 
+\usetheme{uniS}
 % language and encodings
 \usepackage[english]{babel}
 \usepackage[utf8]{inputenc}
@@ -24,13 +25,20 @@
 
 % TikZ
 \usepackage{tikz}
-
+\pgfdeclareimage[height=1cm]{unilogo}{unilogo.pdf} % UniS logo for title slide
+\pgfdeclareimage[height=1cm]{unilogow}{unilogo_w.pdf} % (white) UniS logo for final slide
 
 % metadata
-\title{Fachpraktikum OSM}
+\title{Fachpraktikum Algorithmik für OSM-Daten}
 \author{Erik Zeiske}
-\institute{University of Stuttgart}
+\institute{University of Stuttgart, Institut für formale Methoden der Informatik (FMI)}
 \date{Apr 26, 2021}
+
+\AtBeginSection[]{%
+  \begin{frame}[plain]
+  \sectionpage
+  \end{frame}
+}
 
 \newcommand{\bild}[4]{
   \begin{figure}[htbp]
@@ -53,5 +61,10 @@
 }
 
 \begin{document}
-    \include{slides}
+  \begin{frame}[plain]
+    \titlepage
+  \end{frame}
+
+  \include{slides}
 \end{document}
+
