@@ -12,6 +12,12 @@ void checkMaximumError(const char * file) {
     checkMaximumError(paths);
 }
 
+float getErrorDistance(const ClipperLib::IntPoint& a, const ClipperLib::IntPoint& b) {
+    const ClipperLib::IntPoint midSphere = getMidpoint(a, b);
+    const ClipperLib::IntPoint midCart = {(a.X + b.X) / 2, (a.Y + b.Y) / 2};
+    return calculate_distance(midSphere, midCart);
+}
+
 void checkMaximumError(std::list<ClipperLib::Path> paths) {
     float min = 1e10;
     float avg = 0;
@@ -23,9 +29,7 @@ void checkMaximumError(std::list<ClipperLib::Path> paths) {
         for(size_t i = 1; i < p.size(); i++) {
             const ClipperLib::IntPoint& a = p[i-1];
             const ClipperLib::IntPoint& b = p[i];
-            const ClipperLib::IntPoint midSphere = getMidpoint(a, b);
-            const ClipperLib::IntPoint midCart = {(a.X + b.X) / 2, (a.Y + b.Y) / 2};
-            float distance = calculate_distance(midSphere, midCart);
+            float distance = getErrorDistance(a, b);
             c++;
             avg += distance;
             avg_2 += distance * distance;

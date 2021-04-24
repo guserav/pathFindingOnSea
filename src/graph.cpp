@@ -441,6 +441,21 @@ void Graph::addEdgeIfNodeExists(long long x, long long y, const Node& node) {
     edges.push_back({.dest = otherIndex, .length = length});
 }
 
+void Graph::printEdgeLengths(char * output_s) {
+    std::ofstream output(output_s);
+    std::vector<size_t> sizes(edges.size());
+
+    size_t i = 0;
+    for(const auto& e:edges) {
+        sizes[i++] = e.length;
+    }
+    sort(sizes.begin(), sizes.end());
+    for(size_t i = 0; i < edges.size(); i++) {
+        output << std::to_string(sizes[i]) << "\n";
+    }
+
+}
+
 size_t Graph::getIndex(size_t x, size_t y) {
     return x * pointsInY + y;
 }

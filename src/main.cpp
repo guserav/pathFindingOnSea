@@ -42,6 +42,41 @@ void getStatsOnPolygons(char * input, char * output_s) {
     }
 }
 
+/**
+ * Print all edge errors
+ */
+void getErrorDistances(char * input, char * output_s) {
+    std::list<ClipperLib::Path> paths;
+    paths_import::readIn(paths, input);
+    std::ofstream output(output_s);
+    size_t totalSize = 0;
+    for(const auto& p:paths) {
+        if(p.size() > 0) {
+            totalSize += p.size() - 1;
+        }
+    }
+    std::vector<float> sizes(totalSize);
+
+    size_t j = 0;
+    for(const auto& p:paths) {
+        for(size_t i = 1; i < p.size(); i++) {
+            const ClipperLib::IntPoint& a = p[i-1];
+            const ClipperLib::IntPoint& b = p[i];
+            sizes[j++] = getErrorDistance(a, b);
+        }
+    }
+    std::cerr << "About to write out " << j << " " << totalSize << std::endl;
+    sort(sizes.begin(), sizes.end());
+    for(size_t i = 0; i < totalSize; i++) {
+        output << std::to_string(sizes[i]) << "\n";
+    }
+}
+
+void getEdgeLengths(char * filename, char * output) {
+    Graph g(filename);
+    g.printEdgeLengths(output);
+}
+
 void findPath(char* filename, float x1, float y1, float x2, float y2, int algorithm) {
     Graph graph(filename);
     PathData p = findPath(&graph, x1, y1, x2, y2, algorithm);
@@ -158,6 +193,12 @@ int main(int argc, char ** argv) {
     if(task == "stats") {
         CHECK_PARAMETER("Expected: input, output_s", 2);
         getStatsOnPolygons(argv[2], argv[3]);
+    } else if(task == "statsError") {
+        CHECK_PARAMETER("Expected: input, output_s", 2);
+        getErrorDistances(argv[2], argv[3]);
+    } else if(task == "statsEdgeLength") {
+        CHECK_PARAMETER("Expected: input, output_s", 2);
+        getEdgeLengths(argv[2], argv[3]);
     } else if(task == "create") {
         CHECK_PARAMETER("Expected: input, node_count", 2);
         size_t node_count = atoll(argv[3]);

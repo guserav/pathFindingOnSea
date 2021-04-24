@@ -54,6 +54,7 @@ class Graph {
         void output_geojson(const char * filename);
         void output_geojson(std::ostream& out);
         void output_geojsonCH(std::ostream& out);
+        void printEdgeLengths(char * output_s);
         size_t getIndex(size_t x, size_t y);
         static size_t distance(const Node& a, const Node& b);
         size_t getNearestNode(const ClipperLib::IntPoint& x);

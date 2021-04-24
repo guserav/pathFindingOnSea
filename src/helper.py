@@ -21,7 +21,9 @@ def main():
     with open(args.input, 'r') as readIn:
         for line in readIn:
             try:
-                data.append(int(line.strip()))
+                d = float(line.strip())
+                if d != 0:
+                    data.append(d)
             except Exception:
                 pass
     plotHistogram(data, args.out)
