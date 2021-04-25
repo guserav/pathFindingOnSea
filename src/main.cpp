@@ -165,7 +165,7 @@ void benchmarkCreate(char * filename, size_t n, size_t warmup, struct BenchmarkP
             }
             timeTakenTreeBuild /= n;
             timeTakenGraphBuild /= n;
-            std::cout << typeid(T).name() << "$" << node_count << "$" << tree_build << ":" << timeTakenTreeBuild << ";" << timeTakenGraphBuild << std::endl;
+            std::cout << typeid(T).name() << "$" << node_count << "$" << tree_build << ";" << timeTakenTreeBuild << ";" << timeTakenGraphBuild << std::endl;
         }
     }
 }
