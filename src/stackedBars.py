@@ -8,7 +8,7 @@ def append(l, v):
 
 dataSets = 4
 
-file = open("stats/simpleResult1000.txt", "r")
+file = open("stats/complexResultDetail.txt", "r")
 
 width = 0.4
 #colors = [(1,0,0), (0,1,0), (0,0,1), (0,1,1), (1,0,1), (1,1,0)]
@@ -39,7 +39,7 @@ for line in file:
 
     columns[name] = append(columns.get(name, []), column)
     columnsAggr[name] = append(columnsAggr.get(name, []), columnAggr)
-    names[name] = append(names.get(name, []), nodes)
+    names[name] = append(names.get(name, []), param)
 #plt.show()
 #print(str(columns))
 rows = {k: np.swapaxes(v, 0, 1) for k, v in columns.items()}
@@ -58,6 +58,7 @@ for k in rows:
         phaseNames.append("{} - {}".format(k, phases[i]))
     c += 1
 plt.ylabel('Execution Time in μs')
+plt.xlabel('Break count')
 m = 0
 for k in names:
     if len(names[k]) > m:
