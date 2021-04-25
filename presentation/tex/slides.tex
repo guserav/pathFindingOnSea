@@ -78,3 +78,31 @@
         \end{lstlisting}
     \end{minipage}
 \end{frame}
+
+\begin{frame}{Point in Polygon - Why?}
+    \begin{itemize}
+        \item The problem with simple optimisations:
+    \end{itemize}
+    \bildbreite{../gfx/outlines.pdf}{.9\textwidth}{fig:outlines_count}{}{}
+\end{frame}
+
+\begin{frame}{Point in Polygon - Building a Tree}
+    \begin{itemize}
+        \item Idea: Recursively divide polygons
+    \end{itemize}
+    TODO
+\end{frame}
+
+\begin{frame}{Point in Polygon - Optimisations}
+    \begin{itemize}
+        \item Comparing Bounding Boxes and Tree:
+    \end{itemize}
+    \bildbreite{../gfx/pointInPolygonRectVTree.pdf}{.9\textwidth}{fig:PiPRvT}{}{}
+\end{frame}
+
+\begin{frame}{Point in Polygon - Optimisations}
+    \begin{itemize}
+        \item Changing the break condition:
+    \end{itemize}
+    \bildbreite{../gfx/pointInPolygonTreeBreakCount1e6_rough.pdf}{.9\textwidth}{fig:PiPBreakCount1e6}{}{}
+\end{frame}
