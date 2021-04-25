@@ -113,6 +113,14 @@ struct BenchmarkParam {
     T end;
 };
 
+template<class T>
+bool constexpr isTreeOutlineHolder();
+
+template<>
+bool constexpr isTreeOutlineHolder<TreeOutlineHolder>() {return true;};
+template<>
+bool constexpr isTreeOutlineHolder<OutlineHolderSimple>() {return false;};
+
 /**
  * Run graph creation for a given polygon file
  */
@@ -126,7 +134,7 @@ void benchmarkCreate(char * filename, size_t n, size_t warmup, struct BenchmarkP
             long long timeTakenGraphBuild = 0;
             for(size_t i = 0; i < n; i++) {
                 auto start = std::chrono::high_resolution_clock::now();
-                T outline_holder(paths);
+                T outline_holder(paths, tree_build);
                 auto stop = std::chrono::high_resolution_clock::now();
                 long long duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
                 timeTakenTreeBuild += duration;

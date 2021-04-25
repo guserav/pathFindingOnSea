@@ -168,7 +168,7 @@ bool RectangleOutlineHolder::isPointInWater(const ClipperLib::IntPoint& p) {
     return true;
 }
 
-TreeOutlineHolder::TreeOutlineHolder(const std::list<ClipperLib::Path>& polygons):OutlineHolder(polygons, false), tree_root(polygons) {}
+TreeOutlineHolder::TreeOutlineHolder(const std::list<ClipperLib::Path>& polygons, long max_count, long max_region_size):OutlineHolder(polygons, false), tree_root(polygons, max_count, max_region_size) {}
 
 bool TreeOutlineHolder::isPointInWater(const ClipperLib::IntPoint& p) {
     if(tree_root.containsPoint(p)) {
@@ -177,13 +177,13 @@ bool TreeOutlineHolder::isPointInWater(const ClipperLib::IntPoint& p) {
     return true;
 }
 
-OutlineTree::OutlineTree(const std::list<ClipperLib::Path>& source, bool inX) {
+OutlineTree::OutlineTree(const std::list<ClipperLib::Path>& source, long max_count, long max_region_size, bool inX) {
     ClipperLib::IntRect b;
     calculateOutlines(source, b);
     if(inX) {
-        init<true>(source, b);
+        init<true>(source, b, max_count, max_region_size);
     } else {
-        init<false>(source, b);
+        init<false>(source, b, max_count, max_region_size);
     }
 }
 
@@ -223,14 +223,14 @@ ClipperLib::IntPoint getPointOnDivisionLine(ClipperLib::cInt divisionLine, const
 }
 
 template<bool inX>
-void OutlineTree::init(const std::list<ClipperLib::Path>& source, const ClipperLib::IntRect& boundary) {
+void OutlineTree::init(const std::list<ClipperLib::Path>& source, const ClipperLib::IntRect& boundary, long max_count, long max_region_size) {
     this->inX = inX;
     this->boundary = boundary;
     size_t totalNodeCount = 0;
     for(const auto& p: source) {
         totalNodeCount += p.size();
     }
-    if(totalNodeCount < 1e3) { // No need to divide further.
+    if(totalNodeCount < max_count || (max_region_size > 0 && (boundary.right - boundary.left < max_region_size || boundary.top - boundary.bottom < max_region_size))) { // No need to divide further.
         polygons.reserve(source.size());
         polygons.insert(polygons.end(), source.begin(), source.end());
         boundaries.resize(source.size());
@@ -314,8 +314,8 @@ void OutlineTree::init(const std::list<ClipperLib::Path>& source, const ClipperL
                 }
             }
         }
-        high = new OutlineTree(highPolygons, !inX);
-        low = new OutlineTree(lowPolygons, !inX);
+        high = new OutlineTree(highPolygons, max_count, max_region_size, !inX);
+        low = new OutlineTree(lowPolygons, max_count, max_region_size, !inX);
     }
 }
 
