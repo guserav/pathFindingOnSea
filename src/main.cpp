@@ -12,6 +12,11 @@
 #include "graph.hpp"
 #include "checks.hpp"
 
+#define AREABOUND_WEST -180.
+#define AREABOUND_EAST 180.
+#define AREABOUND_NORTH 85.
+#define AREABOUND_SOUTH -85.
+
 int compare(const void * a_p, const void * b_p) {
     size_t a = *(size_t *) a_p;
     size_t b = *(size_t *) b_p;
@@ -98,6 +103,62 @@ void testGraphCreation(char * filename, size_t node_count) {
     } else {
         TreeOutlineHolder outline_holder(paths);
         Graph g(outline_holder, node_count);
+    }
+}
+
+template<class T>
+struct BenchmarkParam {
+    T start;
+    T mult;
+    T end;
+};
+
+/**
+ * Run graph creation for a given polygon file
+ */
+template<class T>
+void benchmarkCreate(char * filename, size_t n, size_t warmup, struct BenchmarkParam<long> p_node_count, struct BenchmarkParam<long> p_tree_build) {
+    std::list<ClipperLib::Path> paths;
+    paths_import::readIn(paths, filename);
+    for(long tree_build = p_tree_build.start; tree_build <= p_tree_build.end; tree_build *= p_tree_build.mult) {
+        for(size_t node_count = p_node_count.start; node_count <= p_node_count.end; node_count *= p_node_count.mult) {
+            long long timeTakenTreeBuild = 0;
+            long long timeTakenGraphBuild = 0;
+            for(size_t i = 0; i < n; i++) {
+                auto start = std::chrono::high_resolution_clock::now();
+                T outline_holder(paths);
+                auto stop = std::chrono::high_resolution_clock::now();
+                long long duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+                timeTakenTreeBuild += duration;
+
+                start = std::chrono::high_resolution_clock::now();
+                size_t pointsInX = std::sqrt(node_count);
+                size_t pointsInY = node_count / pointsInX;
+                size_t N = pointsInX * pointsInY;
+                float distanceX = (AREABOUND_EAST - AREABOUND_WEST) / pointsInX;
+                float distanceY = (AREABOUND_NORTH - AREABOUND_SOUTH) / pointsInY;
+
+                std::cerr << "Done calculating Outlines" << std::endl;
+                for(size_t x = 0; x < pointsInX; x++) {
+                    const float curX = AREABOUND_WEST + x * distanceX + distanceX / 2;
+                    for(size_t y = 0; y < pointsInY; y++) {
+                        const float curY = AREABOUND_SOUTH + y * distanceY + distanceY / 2;
+                        Node node;
+                        node.position.X = toInt(curX);
+                        node.position.Y = toInt(curY);
+                        node.onWater = outline_holder.isPointInWater(node.position);
+                        std::cerr << "\r" << x * pointsInY + y << ", " << node.onWater;
+                    }
+                }
+                std::cerr << "\nDone generating Points " << i << std::endl;
+                stop = std::chrono::high_resolution_clock::now();
+                duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+                timeTakenGraphBuild += duration;
+            }
+            timeTakenTreeBuild /= n;
+            timeTakenGraphBuild /= n;
+            std::cout << typeid(T).name() << "$" << node_count << "$" << tree_build << ":" << timeTakenTreeBuild << ";" << timeTakenGraphBuild << std::endl;
+        }
     }
 }
 
@@ -220,6 +281,30 @@ int main(int argc, char ** argv) {
             return 1;
         }
         benchmark(argv[2], n, warmup);
+    } else if(task == "benchmarkCreate") {
+        CHECK_PARAMETER("Expected: input, n, warmup, node_count_start, node_count_mult, node_count_end, tree_param_start, tree_param_mult, tree_param_end, class", 10);
+        int n = atoi(argv[3]);
+        int warmup = atoi(argv[4]);
+        struct BenchmarkParam<long> node_count;
+        node_count.start = atol(argv[5]);
+        node_count.mult = atol(argv[6]);
+        node_count.end = atol(argv[7]);
+        struct BenchmarkParam<long> tree_param;
+        tree_param.start = atol(argv[8]);
+        tree_param.mult = atol(argv[9]);
+        tree_param.end = atol(argv[10]);
+        if(warmup >= n) {
+            std::cerr << "warmup has a nonsense value compare to n" << std::endl;
+            return 1;
+        }
+        if(argv[11][0] == 's') {
+            benchmarkCreate<OutlineHolderSimple>(argv[2], n, warmup, node_count, tree_param);
+        } else if(argv[11][0] == 't') {
+            benchmarkCreate<TreeOutlineHolder>(argv[2], n, warmup, node_count, tree_param);
+        } else {
+            benchmarkCreate<TreeOutlineHolder>(argv[2], n, warmup, node_count, tree_param);
+            benchmarkCreate<OutlineHolderSimple>(argv[2], n, warmup, node_count, tree_param);
+        }
     } else {
         std::cerr << "Unknown task: " << task << std::endl;
     }
